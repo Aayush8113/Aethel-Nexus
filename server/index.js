@@ -1,17 +1,18 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const connectDB = require('./config/db'); // <-- Import the file we just made
+const connectDB = require('./config/db');
+const chatRoutes = require('./routes/chatRoutes'); 
 
 dotenv.config();
 const app = express();
 
-// Middleware
 app.use(express.json());
 app.use(cors());
 
-// Connect to Database
-connectDB(); // <-- Execute the connection
+connectDB();
+
+app.use('/api/chat', chatRoutes);
 
 const PORT = process.env.PORT || 5000;
 
