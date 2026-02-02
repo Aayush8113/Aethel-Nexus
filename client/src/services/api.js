@@ -1,15 +1,14 @@
 import axios from 'axios';
 
-// Create a standalone instance for API calls
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api', // Pointing to your Node Server
+  baseURL: 'http://localhost:5000/api',
 });
 
-// Define the Chat function
-export const sendMessageToAI = async (message, history) => {
+// Now accepts chatId
+export const sendMessageToAI = async (message, history, chatId) => {
   try {
-    const response = await API.post('/chat', { message, history });
-    return response.data; // Returns { reply: "..." }
+    const response = await API.post('/chat', { message, history, chatId });
+    return response.data; // Returns { reply: "...", chatId: "..." }
   } catch (error) {
     console.error("API Error:", error);
     throw error;

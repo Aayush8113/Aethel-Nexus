@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { sendMessageToAI } from "../services/api"; // Import our bridge
-import { IoSend, IoPerson } from "react-icons/io5"; // Icons
-import { SiGooglebard } from "react-icons/si"; // AI Icon
-import ReactMarkdown from "react-markdown"; // For rendering code blocks
+import { sendMessageToAI } from "../services/api";
+import { IoSend, IoPerson } from "react-icons/io5";
+import { SiGooglebard } from "react-icons/si";
+import ReactMarkdown from "react-markdown";
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState([
@@ -10,8 +10,8 @@ const ChatInterface = () => {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [chatId, setChatId] = useState(null); // Holds the DB ID
   
-  // Auto-scroll reference
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -26,20 +26,25 @@ const ChatInterface = () => {
     e.preventDefault();
     if (!input.trim()) return;
 
-    // 1. Add User Message to UI immediately
+    // 1. Add User Message to UI
     const userMessage = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
-      // 2. Send to Backend
-      // We pass the *entire* history so the bot has context
-      const response = await sendMessageToAI(input, messages);
+      // 2. Send to Backend (passing chatId if it exists)
+      const response = await sendMessageToAI(input, messages, chatId);
       
       // 3. Add AI Response to UI
       const botMessage = { role: "model", content: response.reply };
       setMessages((prev) => [...prev, botMessage]);
+
+      // 4. Save the Chat ID for the next message
+      if (!chatId && response.chatId) {
+        setChatId(response.chatId);
+      }
+
     } catch (error) {
       console.error("Failed to send message", error);
       setMessages((prev) => [...prev, { role: "model", content: "Error: Could not connect to the Brain." }]);
@@ -62,14 +67,12 @@ const ChatInterface = () => {
         {messages.map((msg, index) => (
           <div key={index} className={`flex gap-4 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             
-            {/* AI Avatar */}
             {msg.role === "model" && (
               <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center mt-1">
                 <SiGooglebard className="text-white text-sm" />
               </div>
             )}
 
-            {/* Message Bubble */}
             <div className={`max-w-[80%] rounded-2xl p-4 ${
               msg.role === "user" 
                 ? "bg-blue-600 text-white" 
@@ -80,7 +83,6 @@ const ChatInterface = () => {
               </ReactMarkdown>
             </div>
 
-            {/* User Avatar */}
             {msg.role === "user" && (
               <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center mt-1">
                 <IoPerson className="text-white text-sm" />
@@ -89,7 +91,6 @@ const ChatInterface = () => {
           </div>
         ))}
         
-        {/* Loading Indicator */}
         {isLoading && (
           <div className="flex gap-4 animate-pulse">
             <div className="w-8 h-8 rounded-full bg-blue-600/50"></div>
