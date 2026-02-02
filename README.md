@@ -1,2 +1,49 @@
-# Aethel-Nexus
-Aethel-Nexus is a feature-rich conversational AI platform designed to deliver a seamless, human-like interaction experience. Inspired by industry leaders like Gemini and ChatGPT, Aethel-Chabot leverages advanced Natural Language Processing (NLP) to handle complex queries, creative writing, and technical problem-solving.
+# 🤖 Aethel-Nexus
+> A High-Performance AI Conversational Platform built with the MERN Stack and Gemini Pro.
+
+![Status](https://img.shields.io/badge/Status-Active-success)
+![Stack](https://img.shields.io/badge/Stack-MERN-blue)
+
+## 🌟 Features
+* **Real-time AI Interaction:** Powered by Google's Gemini Pro model.
+* **Context Awareness:** The AI remembers conversation history for seamless context.
+* **Markdown Support:** Renders code blocks, tables, and bold text beautifully.
+* **Modern UI:** Built with React & Tailwind CSS for a dark-mode, responsive experience.
+
+## 🛠️ Tech Stack
+* **Frontend:** React (Vite), Tailwind CSS, Axios
+* **Backend:** Node.js, Express.js
+* **Database:** MongoDB Atlas (NoSQL)
+* **AI Engine:** Google Gemini Generative AI SDK
+
+## 🚀 Getting Started
+
+### Prerequisites
+* Node.js installed
+* MongoDB Atlas URI
+* Google Gemini API Key
+
+### Installation
+
+1.  **Clone the Repo**
+    ```bash
+    git clone [https://github.com/YOUR_USERNAME/nexus-ai-chat.git](https://github.com/YOUR_USERNAME/nexus-ai-chat.git)
+    ```
+
+2.  **Setup Backend**
+    ```bash
+    cd server
+    npm install
+    # Create .env file and add PORT, MONGO_URI, and GEMINI_API_KEY
+    npm start
+    ```
+
+3.  **Setup Frontend**
+    ```bash
+    cd client
+    npm install
+    npm run dev
+    ```
+
+## 🤝 Contribution
+Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
