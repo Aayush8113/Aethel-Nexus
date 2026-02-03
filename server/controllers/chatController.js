@@ -60,4 +60,17 @@ const generateResponse = async (req, res) => {
   }
 };
 
+
+// @desc    Get all chat titles
+// @route   GET /api/chat
+const getAllChats = async (req, res) => {
+  try {
+    const chats = await Chat.find().select("_id title createdAt").sort({ createdAt: -1 });
+    res.status(200).json(chats);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch history" });
+  }
+};
+
+
 module.exports = { generateResponse };

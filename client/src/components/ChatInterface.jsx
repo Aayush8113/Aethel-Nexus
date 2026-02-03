@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from "react";
-import { sendMessageToAI } from "../services/api";
-import { IoSend, IoPerson } from "react-icons/io5";
+import { useEffect, useRef, useState } from "react";
+import { IoPerson, IoSend } from "react-icons/io5";
 import { SiGooglebard } from "react-icons/si";
 import ReactMarkdown from "react-markdown";
+import { sendMessageToAI } from "../services/api";
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState([
