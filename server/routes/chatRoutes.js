@@ -1,9 +1,10 @@
 const express = require('express');
-const { generateResponse } = require('../controllers/chatController');
+const { generateResponse, getAllChats, getSingleChat } = require('../controllers/chatController');
 
 const router = express.Router();
 
-// When someone posts to '/', run the generateResponse function
 router.post('/', generateResponse);
+router.get('/', getAllChats);
+router.get('/:id', getSingleChat);
 
 module.exports = router;
