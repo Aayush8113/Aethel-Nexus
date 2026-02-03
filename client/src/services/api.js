@@ -25,4 +25,15 @@ export const fetchAllChats = async () => {
   }
 };
 
+
+export const fetchChatById = async (id) => {
+  try {
+    const response = await API.get(`/chat/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch chat details", error);
+    return null;
+  }
+};
+
 export default API;
