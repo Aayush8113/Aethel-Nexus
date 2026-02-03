@@ -8,7 +8,13 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, isOpen }) => {
       md:relative md:translate-x-0
     `}>
       <div className="p-4 flex flex-col h-full">
-         {/* Content will go here */}
+      <button 
+          onClick={onNewChat}
+          className="flex items-center gap-3 w-full px-4 py-3 mb-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all shadow-lg hover:shadow-blue-500/20"
+        >
+          <IoAdd size={20} />
+          <span className="font-semibold">New Chat</span>
+        </button>
       </div>
     </div>
   );
