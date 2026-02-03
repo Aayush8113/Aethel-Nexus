@@ -15,4 +15,14 @@ export const sendMessageToAI = async (message, history, chatId) => {
   }
 };
 
+export const fetchAllChats = async () => {
+  try {
+    const response = await API.get('/chat');
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch chats", error);
+    return [];
+  }
+};
+
 export default API;
