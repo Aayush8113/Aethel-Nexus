@@ -72,5 +72,15 @@ const getAllChats = async (req, res) => {
   }
 };
 
+const getSingleChat = async (req, res) => {
+  try {
+    const chat = await Chat.findById(req.params.id);
+    if (!chat) return res.status(404).json({ error: "Chat not found" });
+    res.status(200).json(chat);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to load chat" });
+  }
+};
 
-module.exports = { generateResponse };
+// UPDATE THIS LINE AT THE BOTTOM:
+module.exports = { generateResponse, getAllChats, getSingleChat };
