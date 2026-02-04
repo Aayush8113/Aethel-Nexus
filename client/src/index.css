@@ -35,3 +35,9 @@
   margin-bottom: 0.5rem;
 }
 
+.prose blockquote {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1rem;
+  font-style: italic;
+  color: #9ca3af;
+}
