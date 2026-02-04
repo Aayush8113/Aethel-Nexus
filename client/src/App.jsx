@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react"; // Added React here
 import ChatInterface from "./components/ChatInterface";
 import Sidebar from "./components/Sidebar";
 import { fetchAllChats } from "./services/api";
 import { IoMenu } from "react-icons/io5";
+import './App.css';
 
 function App() {
   const [chats, setChats] = useState([]);
@@ -10,8 +11,12 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const loadChats = async () => {
-    const data = await fetchAllChats();
-    setChats(data);
+    try {
+      const data = await fetchAllChats();
+      setChats(data || []);
+    } catch (error) {
+      console.error("Failed to fetch chats:", error);
+    }
   };
 
   useEffect(() => {

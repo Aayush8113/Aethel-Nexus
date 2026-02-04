@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { sendMessageToAI, fetchChatById } from "../services/api";
 import { IoSend, IoPerson } from "react-icons/io5";
-import { SiGooglebard } from "react-icons/si";
+import { SiGooglegemini } from "react-icons/si"; 
 import ReactMarkdown from "react-markdown";
 import CodeBlock from "./CodeBlock";
-
 
 const ChatInterface = ({ activeChatId, onChatUpdated }) => {
   const [messages, setMessages] = useState([]);
@@ -64,27 +63,30 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
           <div key={index} className={`flex gap-4 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "model" && (
               <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center mt-1">
-                <SiGooglebard className="text-white text-sm" />
+                <SiGooglegemini className="text-white text-sm" /> 
               </div>
             )}
             <div className={`max-w-[80%] rounded-2xl p-4 ${
               msg.role === "user" ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-100 border border-gray-700"
             }`}>
-             <ReactMarkdown 
-              className="prose prose-invert max-w-none text-sm leading-relaxed"
-              components={{
-                code({node, inline, className, children, ...props}) {
-                  const match = /language-(\w+)/.exec(className || '')
-                  return !inline && match ? (
-                    <CodeBlock language={match[1]} value={String(children).replace(/\n$/, '')} />
-                  ) : (
-                    <code className="bg-gray-700 rounded px-1 py-0.5" {...props}>{children}</code>
-                  )
-                }
-              }}
-            >
-              {msg.content}
-            </ReactMarkdown>
+              {/* STYLING WRAPPER FOR REACT-MARKDOWN V10 */}
+              <div className="prose prose-invert max-w-none text-sm leading-relaxed">
+                <ReactMarkdown 
+                  components={{
+                    code({node, className, children, ...props}) {
+                      const match = /language-(\w+)/.exec(className || '');
+                      // Version 10 uses logic check instead of 'inline' prop
+                      return match ? (
+                        <CodeBlock language={match[1]} value={String(children).replace(/\n$/, '')} />
+                      ) : (
+                        <code className="bg-gray-700 rounded px-1 py-0.5" {...props}>{children}</code>
+                      )
+                    }
+                  }}
+                >
+                  {msg.content}
+                </ReactMarkdown>
+              </div>
             </div>
           </div>
         ))}
