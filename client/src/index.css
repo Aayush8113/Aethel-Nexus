@@ -13,3 +13,12 @@
   background: #4b5563; 
   border-radius: 4px;
 }
+
+.prose ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+.prose ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+}
