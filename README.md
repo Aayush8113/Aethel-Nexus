@@ -10,6 +10,8 @@
 * **Markdown Support:** Renders code blocks, tables, and bold text beautifully.
 * **Modern UI:** Built with React & Tailwind CSS for a dark-mode, responsive experience.
 
+* **Syntax Highlighting:** Professional code blocks with VS Code theme and copy support.
+
 ## 🛠️ Tech Stack
 * **Frontend:** React (Vite), Tailwind CSS, Axios
 * **Backend:** Node.js, Express.js
