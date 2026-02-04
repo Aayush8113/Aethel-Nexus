@@ -3,6 +3,8 @@ import { sendMessageToAI, fetchChatById } from "../services/api";
 import { IoSend, IoPerson } from "react-icons/io5";
 import { SiGooglebard } from "react-icons/si";
 import ReactMarkdown from "react-markdown";
+import CodeBlock from "./CodeBlock";
+
 
 const ChatInterface = ({ activeChatId, onChatUpdated }) => {
   const [messages, setMessages] = useState([]);
