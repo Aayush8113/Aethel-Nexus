@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { sendMessageToAI, fetchChatById } from "../services/api";
-import { IoSend, IoPerson, IoFlash } from "react-icons/io5"; // Changed icon
+import { IoSend, IoPerson, IoFlash } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
 import CodeBlock from "./CodeBlock";
 import TypingIndicator from "./TypingIndicator";
@@ -12,14 +12,12 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
   
   const messagesEndRef = useRef(null);
 
-  // Auto-scroll logic
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
-  // Load History
   useEffect(() => {
     const loadChat = async () => {
       if (activeChatId) {
@@ -28,7 +26,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
         if (data && data.messages) setMessages(data.messages);
         setIsLoading(false);
       } else {
-        // Reset to greeting
         setMessages([{ role: "model", content: "Hello! I am **Aethel-Nexus**.  \nReady to solve complex problems. What are we building?" }]);
       }
     };
@@ -45,17 +42,15 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
     setIsLoading(true);
 
     try {
-      // Send the entire message history + new input
       const response = await sendMessageToAI(input, messages, activeChatId);
-      
       const botMessage = { role: "model", content: response.reply };
       setMessages((prev) => [...prev, botMessage]);
 
       if (!activeChatId && response.chatId) {
-        onChatUpdated(); // Refresh sidebar if new chat created
+        onChatUpdated();
       }
     } catch (error) {
-      setMessages((prev) => [...prev, { role: "model", content: "⚠️ **Connection Error**: I couldn't reach the backend. Is the server running?" }]);
+      setMessages((prev) => [...prev, { role: "model", content: "⚠️ **Connection Error**: I couldn't reach the backend." }]);
     } finally {
       setIsLoading(false);
     }
@@ -63,20 +58,14 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
 
   return (
     <div className="relative flex flex-col h-full bg-slate-950 text-slate-100">
-      
-      {/* Messages Area */}
       <div className="flex-1 p-4 space-y-8 overflow-y-auto md:p-8 scroll-smooth">
         {messages.map((msg, index) => (
-          <div key={index} className={`flex gap-4 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            
-            {/* Bot Avatar */}
+          <div key={index} className={`flex gap-4 animate-fade-in ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "model" && (
               <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 mt-1 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-500/30">
                 <IoFlash className="text-sm text-white" />
               </div>
             )}
-
-            {/* Message Bubble */}
             <div className={`max-w-[85%] md:max-w-[75%] rounded-2xl p-4 shadow-sm ${
               msg.role === "user" 
                 ? "bg-slate-800 text-white border border-slate-700 rounded-tr-sm" 
@@ -99,8 +88,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
                 </ReactMarkdown>
               </div>
             </div>
-
-            {/* User Avatar */}
             {msg.role === "user" && (
               <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 mt-1 rounded-lg bg-slate-700">
                 <IoPerson className="text-sm text-slate-400" />
@@ -109,8 +96,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
           </div>
         ))}
 
-        {/* Loading Indicator */}
-       {isLoading && (
+        {isLoading && (
           <div className="flex justify-start gap-4 animate-fade-in">
              <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 mt-1 bg-indigo-600 rounded-lg">
                 <IoFlash className="text-sm text-white animate-pulse" />
@@ -121,7 +107,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      {/* Input Area */}
       <div className="sticky bottom-0 z-10 p-4 border-t md:p-6 bg-slate-950/80 backdrop-blur-md border-slate-800">
         <form onSubmit={handleSend} className="relative flex items-center max-w-4xl mx-auto group">
           <input
@@ -129,7 +114,11 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask Aethel anything..."
-            className="w-full px-6 py-4 text-white transition-all border shadow-xl outline-none bg-slate-900 rounded-xl border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 placeholder:text-slate-500"
+            className={`w-full bg-slate-900 text-white px-6 py-4 rounded-xl border transition-all shadow-xl outline-none
+              ${isLoading 
+                ? "border-indigo-500/50 opacity-50 cursor-wait" 
+                : "border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"
+              }`}
             disabled={isLoading}
           />
           <button 
