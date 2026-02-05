@@ -5,12 +5,13 @@
 ![Stack](https://img.shields.io/badge/Stack-MERN-blue)
 
 ## 🌟 Features
-* **Real-time AI Interaction:** Powered by Google's Gemini Pro model.
-* **Context Awareness:** The AI remembers conversation history for seamless context.
+* **Real-time AI Interaction:** Powered by Google's Gemini Pro & Flash models.
+* **Smart Context:** The AI remembers conversation history for seamless context.
+* **Auto-Fallback Engine:** Automatically switches between Gemini 3.0, 2.0, and 1.5 to prevent crashes.
+* **Professional UI:** Glassmorphism design with smooth fade-in animations.
+* **Typing Indicators:** Real-time bouncing dot animations while the AI thinks.
 * **Markdown Support:** Renders code blocks, tables, and bold text beautifully.
-* **Modern UI:** Built with React & Tailwind CSS for a dark-mode, responsive experience.
-
-* **Syntax Highlighting:** Professional code blocks with VS Code theme and copy support.
+* **Syntax Highlighting:** Professional code blocks with VS Code theme and copy-to-clipboard.
 
 ## 🛠️ Tech Stack
 * **Frontend:** React (Vite), Tailwind CSS, Axios
@@ -49,3 +50,4 @@
 
 ## 🤝 Contribution
 Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
+* **Day 5:** Added typing indicators, skeleton loaders, and smooth UI transitions.
