@@ -3,6 +3,7 @@ import { sendMessageToAI, fetchChatById } from "../services/api";
 import { IoSend, IoPerson, IoFlash } from "react-icons/io5"; // Changed icon
 import ReactMarkdown from "react-markdown";
 import CodeBlock from "./CodeBlock";
+import TypingIndicator from "./TypingIndicator";
 
 const ChatInterface = ({ activeChatId, onChatUpdated }) => {
   const [messages, setMessages] = useState([]);
@@ -109,16 +110,12 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
         ))}
 
         {/* Loading Indicator */}
-        {isLoading && (
-          <div className="flex gap-4">
-             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600/20">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-ping"></div>
+       {isLoading && (
+          <div className="flex justify-start gap-4 animate-fade-in">
+             <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 mt-1 bg-indigo-600 rounded-lg">
+                <IoFlash className="text-sm text-white animate-pulse" />
              </div>
-             <div className="flex items-center h-10 gap-1 px-4 border rounded-full bg-slate-900 border-slate-800">
-                <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div className="w-2 h-2 rounded-full bg-slate-500 animate-bounce"></div>
-             </div>
+             <TypingIndicator />
           </div>
         )}
         <div ref={messagesEndRef} className="h-4" />
