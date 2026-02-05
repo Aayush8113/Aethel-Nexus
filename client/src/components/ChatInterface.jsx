@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from "react";
-import { sendMessageToAI, fetchChatById } from "../services/api";
-import { IoSend, IoPerson, IoFlash } from "react-icons/io5"; // Changed icon
+import { useEffect, useRef, useState } from "react";
+import { IoSend } from "react-icons/io5";
+import { SiGooglegemini } from "react-icons/si";
 import ReactMarkdown from "react-markdown";
+import { fetchChatById, sendMessageToAI } from "../services/api";
 import CodeBlock from "./CodeBlock";
 
 const ChatInterface = ({ activeChatId, onChatUpdated }) => {
@@ -11,24 +12,21 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
   
   const messagesEndRef = useRef(null);
 
-  // Auto-scroll logic
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
+  useEffect(() => { scrollToBottom(); }, [messages]);
 
-  // Load History
   useEffect(() => {
     const loadChat = async () => {
       if (activeChatId) {
         setIsLoading(true);
         const data = await fetchChatById(activeChatId);
-        if (data && data.messages) setMessages(data.messages);
+        if (data) setMessages(data.messages);
         setIsLoading(false);
       } else {
-        // Reset to greeting
-        setMessages([{ role: "model", content: "Hello! I am **Aethel-Nexus**.  \nReady to solve complex problems. What are we building?" }]);
+        setMessages([{ role: "model", content: "Hello! I am Aethel-Nexus. How can I help you code today?" }]);
       }
     };
     loadChat();
@@ -36,7 +34,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim()) return;
 
     const userMessage = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
@@ -44,52 +42,44 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
     setIsLoading(true);
 
     try {
-      // Send the entire message history + new input
       const response = await sendMessageToAI(input, messages, activeChatId);
-      
       const botMessage = { role: "model", content: response.reply };
       setMessages((prev) => [...prev, botMessage]);
 
       if (!activeChatId && response.chatId) {
-        onChatUpdated(); // Refresh sidebar if new chat created
+        onChatUpdated();
       }
     } catch (error) {
-      setMessages((prev) => [...prev, { role: "model", content: "⚠️ **Connection Error**: I couldn't reach the backend. Is the server running?" }]);
+      setMessages((prev) => [...prev, { role: "model", content: "Error: Could not connect." }]);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="relative flex flex-col h-full bg-slate-950 text-slate-100">
-      
-      {/* Messages Area */}
-      <div className="flex-1 p-4 space-y-8 overflow-y-auto md:p-8 scroll-smooth">
+    <div className="flex flex-col h-full text-gray-100 bg-gray-900">
+      <div className="flex-1 p-4 space-y-6 overflow-y-auto">
         {messages.map((msg, index) => (
           <div key={index} className={`flex gap-4 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            
-            {/* Bot Avatar */}
             {msg.role === "model" && (
-              <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 mt-1 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-500/30">
-                <IoFlash className="text-sm text-white" />
+              <div className="flex items-center justify-center w-8 h-8 mt-1 bg-blue-600 rounded-full">
+                <SiGooglegemini className="text-sm text-white" /> 
               </div>
             )}
-
-            {/* Message Bubble */}
-            <div className={`max-w-[85%] md:max-w-[75%] rounded-2xl p-4 shadow-sm ${
-              msg.role === "user" 
-                ? "bg-slate-800 text-white border border-slate-700 rounded-tr-sm" 
-                : "bg-transparent text-slate-200 border border-slate-800/50 rounded-tl-sm"
+            <div className={`max-w-[80%] rounded-2xl p-4 ${
+              msg.role === "user" ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-100 border border-gray-700"
             }`}>
-              <div className="text-sm leading-7 prose prose-invert max-w-none">
+              {/* STYLING WRAPPER FOR REACT-MARKDOWN V10 */}
+              <div className="text-sm leading-relaxed prose prose-invert max-w-none">
                 <ReactMarkdown 
                   components={{
                     code({node, className, children, ...props}) {
                       const match = /language-(\w+)/.exec(className || '');
+                      // Version 10 uses logic check instead of 'inline' prop
                       return match ? (
                         <CodeBlock language={match[1]} value={String(children).replace(/\n$/, '')} />
                       ) : (
-                        <code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>
+                        <code className="bg-gray-700 rounded px-1 py-0.5" {...props}>{children}</code>
                       )
                     }
                   }}
@@ -98,54 +88,26 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
                 </ReactMarkdown>
               </div>
             </div>
-
-            {/* User Avatar */}
-            {msg.role === "user" && (
-              <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 mt-1 rounded-lg bg-slate-700">
-                <IoPerson className="text-sm text-slate-400" />
-              </div>
-            )}
           </div>
         ))}
-
-        {/* Loading Indicator */}
-        {isLoading && (
-          <div className="flex gap-4">
-             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600/20">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-ping"></div>
-             </div>
-             <div className="flex items-center h-10 gap-1 px-4 border rounded-full bg-slate-900 border-slate-800">
-                <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div className="w-2 h-2 rounded-full bg-slate-500 animate-bounce"></div>
-             </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} className="h-4" />
+        {isLoading && <div className="ml-12 text-sm text-gray-500 animate-pulse">Aethel is thinking...</div>}
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="sticky bottom-0 z-10 p-4 border-t md:p-6 bg-slate-950/80 backdrop-blur-md border-slate-800">
-        <form onSubmit={handleSend} className="relative flex items-center max-w-4xl mx-auto group">
+      <div className="p-4 bg-gray-900 border-t border-gray-800">
+        <form onSubmit={handleSend} className="relative flex items-center transition-all bg-gray-800 border border-gray-700 rounded-full focus-within:border-blue-500">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask Aethel anything..."
-            className="w-full px-6 py-4 text-white transition-all border shadow-xl outline-none bg-slate-900 rounded-xl border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 placeholder:text-slate-500"
+            placeholder="Message Aethel-Nexus..."
+            className="w-full px-6 py-4 text-white bg-transparent rounded-full outline-none"
             disabled={isLoading}
           />
-          <button 
-            type="submit" 
-            disabled={isLoading || !input.trim()}
-            className="absolute p-2 text-white transition-all bg-indigo-600 rounded-lg shadow-lg right-3 hover:bg-indigo-500 disabled:opacity-50 disabled:bg-slate-700"
-          >
-            <IoSend size={18} />
+          <button type="submit" disabled={isLoading || !input.trim()} className="absolute p-2 bg-blue-600 rounded-full right-2 hover:bg-blue-500">
+            <IoSend className="text-white" />
           </button>
         </form>
-        <p className="mt-3 text-xs font-medium text-center text-slate-600">
-          Aethel-Nexus v1.2 • AI can make mistakes.
-        </p>
       </div>
     </div>
   );
