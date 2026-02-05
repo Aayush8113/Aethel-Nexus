@@ -1,6 +1,6 @@
 import { IoChatboxOutline, IoAdd, IoCubeOutline } from "react-icons/io5";
 
-const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, isOpen }) => {
+const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, isOpen, isLoading }) => {
   return (
     <div className={`
       fixed inset-y-0 left-0 z-30 w-72 bg-slate-900/95 backdrop-blur-xl border-r border-slate-800 transform transition-transform duration-300 ease-in-out
@@ -27,7 +27,13 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, isOpen }) => {
         <div className="flex-1 pr-1 space-y-1 overflow-y-auto custom-scrollbar">
           <h3 className="px-2 mb-3 text-xs font-bold tracking-wider uppercase text-slate-500">History</h3>
           
-          {chats.length === 0 ? (
+          {isLoading ? (
+            <div className="px-2 space-y-2">
+              <div className="w-full h-10 rounded-lg bg-slate-800/50 animate-pulse"></div>
+              <div className="w-full h-10 rounded-lg bg-slate-800/50 animate-pulse"></div>
+              <div className="w-3/4 h-10 rounded-lg bg-slate-800/50 animate-pulse"></div>
+            </div>
+          ) : chats.length === 0 ? (
             <p className="px-2 text-sm italic text-slate-600">No history yet.</p>
           ) : (
             chats.map((chat) => (
