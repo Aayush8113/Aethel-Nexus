@@ -1,21 +1,24 @@
-import React, { useState, useEffect } from "react"; // Added React here
+import { useState, useEffect } from "react";
 import ChatInterface from "./components/ChatInterface";
 import Sidebar from "./components/Sidebar";
 import { fetchAllChats } from "./services/api";
 import { IoMenu } from "react-icons/io5";
-import './App.css';
 
 function App() {
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isChatsLoading, setIsChatsLoading] = useState(true);
 
   const loadChats = async () => {
+    setIsChatsLoading(true);
     try {
       const data = await fetchAllChats();
       setChats(data || []);
     } catch (error) {
       console.error("Failed to fetch chats:", error);
+    } finally {
+      setIsChatsLoading(false);
     }
   };
 
@@ -24,10 +27,10 @@ function App() {
   }, [activeChatId]);
 
   return (
-    <div className="flex h-screen bg-black text-white overflow-hidden">
+    <div className="flex h-screen overflow-hidden text-white bg-black">
       <button 
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="md:hidden fixed top-4 left-4 z-30 p-2 bg-gray-800 rounded-md"
+        className="fixed z-30 p-2 bg-gray-800 rounded-md md:hidden top-4 left-4"
       >
         <IoMenu />
       </button>
@@ -36,6 +39,7 @@ function App() {
         chats={chats} 
         activeChatId={activeChatId}
         isOpen={isSidebarOpen}
+        isLoading={isChatsLoading}
         onSelectChat={(id) => {
           setActiveChatId(id);
           setIsSidebarOpen(false);
@@ -46,7 +50,7 @@ function App() {
         }}
       />
 
-      <div className="flex-1 relative h-full">
+      <div className="relative flex-1 h-full">
         <ChatInterface 
           activeChatId={activeChatId} 
           onChatUpdated={loadChats} 
