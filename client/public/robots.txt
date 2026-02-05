@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://aethelnexus.app/sitemap.xml
+Host: https://aethelnexus.app
