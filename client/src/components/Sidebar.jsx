@@ -7,17 +7,17 @@
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
         md:relative md:translate-x-0
       `}>
-        <div className="p-4 flex flex-col h-full">
+        <div className="flex flex-col h-full p-4">
         <button 
             onClick={onNewChat}
-            className="flex items-center gap-3 w-full px-4 py-3 mb-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all shadow-lg hover:shadow-blue-500/20"
+            className="flex items-center w-full gap-3 px-4 py-3 mb-4 text-white transition-all bg-blue-600 shadow-lg hover:bg-blue-500 rounded-xl hover:shadow-blue-500/20"
           >
             <IoAdd size={20} />
             <span className="font-semibold">New Chat</span>
           </button>
 
-          <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 ml-2">Recent</h3>
+          <div className="flex-1 pr-2 space-y-2 overflow-y-auto">
+            <h3 className="mb-2 ml-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">Recent</h3>
             {chats.map((chat) => (
               <button
                 key={chat._id}
@@ -29,7 +29,7 @@
                 }`}
               >
                 <IoChatboxOutline />
-                <span className="truncate text-sm">{chat.title}</span>
+                <span className="text-sm truncate">{chat.title}</span>
               </button>
             ))}
           </div>
