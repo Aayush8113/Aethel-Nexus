@@ -4,11 +4,13 @@ import { IoSend, IoPerson, IoFlash } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
 import CodeBlock from "./CodeBlock";
 import TypingIndicator from "./TypingIndicator";
+import { useNotify } from "../hooks/useNotify";
 
 const ChatInterface = ({ activeChatId, onChatUpdated }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { error: notifyError } = useNotify();
   
   const messagesEndRef = useRef(null);
 
@@ -49,7 +51,8 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
       if (!activeChatId && response.chatId) {
         onChatUpdated();
       }
-    } catch (error) {
+    } catch (err) {
+      notifyError("Failed to connect to AI Brain");
       setMessages((prev) => [...prev, { role: "model", content: "⚠️ **Connection Error**: I couldn't reach the backend." }]);
     } finally {
       setIsLoading(false);
