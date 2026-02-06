@@ -50,3 +50,8 @@ pre { margin: 0 !important; background: transparent !important; }
 .cursor-wait {
   cursor: wait;
 }
+
+.toaster-wrapper {
+  z-index: 9999 !important;
+}
+
