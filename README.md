@@ -51,3 +51,6 @@
 ## 🤝 Contribution
 Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 * **Day 5:** Added typing indicators, skeleton loaders, and smooth UI transitions.
+
+* **User Feedback System:** Interactive Toast notifications for all actions.
+* **Offline Detection:** Smart banner warning when internet connection is lost.
