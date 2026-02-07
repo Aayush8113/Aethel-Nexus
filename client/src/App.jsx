@@ -3,7 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import ChatInterface from "./components/ChatInterface";
 import Sidebar from "./components/Sidebar";
 import OfflineBanner from "./components/OfflineBanner";
-import { fetchAllChats } from "./services/api";
+import { fetchAllChats, deleteChat } from "./services/api";
 import { IoMenu } from "react-icons/io5";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { useNotify } from "./hooks/useNotify";
@@ -15,7 +15,7 @@ function App() {
   const [isChatsLoading, setIsChatsLoading] = useState(true);
   
   const isOnline = useOnlineStatus();
-  const { success } = useNotify();
+  const { success, error: notifyError } = useNotify();
 
   const loadChats = async () => {
     setIsChatsLoading(true);
@@ -29,19 +29,28 @@ function App() {
     }
   };
 
+  const handleDeleteChat = async (id) => {
+    if (confirm("Are you sure you want to delete this chat permanently?")) {
+      const isDeleted = await deleteChat(id);
+      if (isDeleted) {
+        setChats(prev => prev.filter(chat => chat._id !== id));
+        if (activeChatId === id) setActiveChatId(null);
+        success("Chat deleted successfully");
+      } else {
+        notifyError("Failed to delete chat");
+      }
+    }
+  };
+
   useEffect(() => {
     loadChats();
   }, [activeChatId]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden text-white bg-black">
-      {/* 1. Toast Provider */}
       <Toaster position="top-center" />
-
-      {/* 2. Offline Warning */}
       {!isOnline && <OfflineBanner />}
 
-      {/* 3. Main Layout */}
       <div className="relative flex flex-1 overflow-hidden">
         <button 
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -64,6 +73,7 @@ function App() {
             setIsSidebarOpen(false);
             success("Started a new conversation");
           }}
+          onDeleteChat={handleDeleteChat}
         />
 
         <div className="relative flex-1 h-full">
