@@ -4,51 +4,68 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
-// 1. Safety & Key Check
 if (!process.env.GEMINI_API_KEY) {
-  console.error("❌ ERROR: GEMINI_API_KEY is missing in .env");
+  console.error("❌ ERROR: GEMINI_API_KEY is missing.");
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// 2. MAX POWER CONFIGURATION
-// Using 'gemini-2.5-flash' for maximum speed and intelligence.
-const model = genAI.getGenerativeModel({ 
-  model: "gemini-2.5-flash",
-  generationConfig: {
-    temperature: 0.7, // Balance between creativity and precision
-    topP: 0.8,
-    topK: 40,
-    maxOutputTokens: 8192, // Allow long, detailed code responses
-  }
-});
+// STRATEGY: Try Best -> Fallback to Fast -> Fallback to Reliable
+const MODEL_TIER_1 = "gemini-3-pro-preview";
+const MODEL_TIER_2 = "gemini-2.0-flash";
+const MODEL_TIER_3 = "gemini-1.5-flash";
 
 const generateResponse = async (req, res) => {
+  const { message, history, chatId } = req.body;
+
+  if (!message) return res.status(400).json({ error: "Message required" });
+
+  let chatHistory = [];
+  if (history && Array.isArray(history)) {
+    const firstUserIndex = history.findIndex(msg => msg.role === "user");
+    if (firstUserIndex !== -1) {
+      chatHistory = history.slice(firstUserIndex).map(msg => ({
+        role: msg.role === "user" ? "user" : "model",
+        parts: [{ text: msg.content }]
+      }));
+    }
+  }
+
+  let text = "";
+  let usedModel = "";
+
   try {
-    const { message, history, chatId } = req.body;
+    console.log(`🧠 Trying ${MODEL_TIER_1}...`);
+    const model1 = genAI.getGenerativeModel({ model: MODEL_TIER_1 });
+    const session1 = model1.startChat({ history: chatHistory });
+    const result = await session1.sendMessage(message);
+    text = (await result.response).text();
+    usedModel = MODEL_TIER_1;
 
-    if (!message) return res.status(400).json({ error: "Message required" });
-
-    // 3. Smart History Cleaning
-    // Removes the "Hello" greeting to prevent API crashes
-    let chatHistory = [];
-    if (history && Array.isArray(history)) {
-      const firstUserIndex = history.findIndex(msg => msg.role === "user");
-      if (firstUserIndex !== -1) {
-        chatHistory = history.slice(firstUserIndex).map(msg => ({
-          role: msg.role === "user" ? "user" : "model",
-          parts: [{ text: msg.content }]
-        }));
+  } catch (err1) {
+    console.warn(`⚠️ ${MODEL_TIER_1} failed. Switching to ${MODEL_TIER_2}...`);
+    try {
+      const model2 = genAI.getGenerativeModel({ model: MODEL_TIER_2 });
+      const session2 = model2.startChat({ history: chatHistory });
+      const result = await session2.sendMessage(message);
+      text = (await result.response).text();
+      usedModel = MODEL_TIER_2;
+    } catch (err2) {
+      console.warn(`⚠️ ${MODEL_TIER_2} failed. Switching to ${MODEL_TIER_3}...`);
+      try {
+        const model3 = genAI.getGenerativeModel({ model: MODEL_TIER_3 });
+        const session3 = model3.startChat({ history: chatHistory });
+        const result = await session3.sendMessage(message);
+        text = (await result.response).text();
+        usedModel = MODEL_TIER_3;
+      } catch (err3) {
+        console.error("🔥 ALL MODELS FAILED.");
+        return res.status(429).json({ error: "System Overload. Please wait 60s." });
       }
     }
+  }
 
-    // 4. Send to Google's Brain
-    const chatSession = model.startChat({ history: chatHistory });
-    const result = await chatSession.sendMessage(message);
-    const response = await result.response;
-    const text = response.text();
-
-    // 5. Save to Long-Term Memory (Database)
+  try {
     let chatDoc;
     if (chatId) chatDoc = await Chat.findById(chatId);
 
@@ -62,19 +79,9 @@ const generateResponse = async (req, res) => {
         messages: [{ role: "user", content: message }, { role: "model", content: text }]
       });
     }
-
-    // 6. Respond to Frontend
-    res.status(200).json({ reply: text, chatId: chatDoc._id });
-
-  } catch (error) {
-    console.error("🔥 ERROR LOG:", error.message);
-    
-    // Fallback: If 2.5 fails, suggest 2.0 (Self-Healing Error Message)
-    if (error.message.includes("not found")) {
-      res.status(500).json({ error: "Model Update Required", details: "Please switch code to 'gemini-2.0-flash'" });
-    } else {
-      res.status(500).json({ error: "Brain Connection Failed", details: error.message });
-    }
+    res.status(200).json({ reply: text, chatId: chatDoc._id, model: usedModel });
+  } catch (dbError) {
+    res.status(200).json({ reply: text, chatId: null });
   }
 };
 
@@ -97,4 +104,15 @@ const getSingleChat = async (req, res) => {
   }
 };
 
-module.exports = { generateResponse, getAllChats, getSingleChat };
+// --- NEW FUNCTION: DELETE CHAT ---
+const deleteChat = async (req, res) => {
+  try {
+    const chat = await Chat.findByIdAndDelete(req.params.id);
+    if (!chat) return res.status(404).json({ error: "Chat not found" });
+    res.status(200).json({ message: "Chat deleted" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete chat" });
+  }
+};
+
+module.exports = { generateResponse, getAllChats, getSingleChat, deleteChat };
