@@ -54,3 +54,7 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 
 * **User Feedback System:** Interactive Toast notifications for all actions.
 * **Offline Detection:** Smart banner warning when internet connection is lost.
+
+### 🏆 Milestones
+* **Week 1 (Completed):** Core Chat, History, Delete, Sidebar, and Styling.
+* **Next Steps:** Voice Input and Image Recognition.
