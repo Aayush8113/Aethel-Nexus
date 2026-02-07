@@ -13,12 +13,20 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
   const { error: notifyError } = useNotify();
   
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null); // Ref for Input
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
+
+  // Auto-focus input on chat change
+  useEffect(() => {
+    if (!isLoading) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [activeChatId, isLoading]);
 
   useEffect(() => {
     const loadChat = async () => {
@@ -113,6 +121,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
       <div className="sticky bottom-0 z-10 p-4 border-t md:p-6 bg-slate-950/80 backdrop-blur-md border-slate-800">
         <form onSubmit={handleSend} className="relative flex items-center max-w-4xl mx-auto group">
           <input
+            ref={inputRef} // Attached Ref Here
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
