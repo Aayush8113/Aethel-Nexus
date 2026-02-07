@@ -6,9 +6,8 @@ const API = axios.create({
 
 export const sendMessageToAI = async (message, history, chatId) => {
   try {
-    // We send history so the AI remembers previous messages
     const response = await API.post('/chat', { message, history, chatId });
-    return response.data; 
+    return response.data;
   } catch (error) {
     console.error("API Error:", error);
     throw error;
@@ -20,6 +19,7 @@ export const fetchAllChats = async () => {
     const response = await API.get('/chat');
     return response.data;
   } catch (error) {
+    console.error("Fetch Error:", error);
     return [];
   }
 };
@@ -29,8 +29,18 @@ export const fetchChatById = async (id) => {
     const response = await API.get(`/chat/${id}`);
     return response.data;
   } catch (error) {
+    console.error("Load Chat Error:", error);
     return null;
   }
 };
 
-export default API;
+// --- NEW FUNCTION ---
+export const deleteChat = async (id) => {
+  try {
+    await API.delete(`/chat/${id}`);
+    return true;
+  } catch (error) {
+    console.error("Delete Error:", error);
+    return false;
+  }
+};
