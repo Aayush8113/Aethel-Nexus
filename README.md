@@ -60,3 +60,5 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 * **Next Steps:** Voice Input and Image Recognition.
 
 * **Day 8:** Implemented Speech-to-Text (Voice Input) using Web Speech API.
+* **Voice Input:** Speech-to-text with audio feedback and pulsing animations.
+* **Smart Input:** Auto-expanding textarea with Enter-to-send support.
