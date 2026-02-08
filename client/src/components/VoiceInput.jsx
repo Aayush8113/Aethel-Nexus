@@ -1,10 +1,18 @@
 import { IoMic, IoMicOff } from "react-icons/io5";
+import { useSound } from "../hooks/useSound"; // Import
 
 const VoiceInput = ({ isListening, onToggle }) => {
+  const { playPing } = useSound(); // Use hook
+
+  const handleClick = () => {
+    playPing(); // Play sound
+    onToggle();
+  };
+
   return (
     <button
-      type="button" // Important: prevents form submission
-      onClick={onToggle}
+      type="button"
+      onClick={handleClick} // Update click handler
       className={`
         p-3 rounded-full transition-all duration-300 flex items-center justify-center relative
         ${isListening 
@@ -14,7 +22,6 @@ const VoiceInput = ({ isListening, onToggle }) => {
       `}
       title={isListening ? "Stop Listening" : "Start Voice Input"}
     >
-      {/* Pulsing Ring Effect when listening */}
       {isListening && (
         <span className="absolute inset-0 border border-red-500 rounded-full opacity-75 animate-ping"></span>
       )}
