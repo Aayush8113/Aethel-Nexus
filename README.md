@@ -58,3 +58,5 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 ### 🏆 Milestones
 * **Week 1 (Completed):** Core Chat, History, Delete, Sidebar, and Styling.
 * **Next Steps:** Voice Input and Image Recognition.
+
+* **Day 8:** Implemented Speech-to-Text (Voice Input) using Web Speech API.
