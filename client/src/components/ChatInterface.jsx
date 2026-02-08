@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { sendMessageToAI, fetchChatById } from "../services/api";
-import { IoSend, IoPerson, IoFlash } from "react-icons/io5";
+import { IoPerson, IoFlash } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
 import CodeBlock from "./CodeBlock";
 import TypingIndicator from "./TypingIndicator";
-import VoiceInput from "./VoiceInput"; // New Import
+import MessageInput from "./MessageInput"; // New Import
 import { useNotify } from "../hooks/useNotify";
-import { useSpeechRecognition } from "../hooks/useSpeechRecognition"; // New Import
+import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 
 const ChatInterface = ({ activeChatId, onChatUpdated }) => {
   const [messages, setMessages] = useState([]);
@@ -17,9 +17,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
   
   const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
 
-  // Effect: When voice text comes in, append it to input
   useEffect(() => {
     if (transcript) {
       setInput((prev) => prev + (prev ? " " : "") + transcript);
@@ -32,11 +30,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
   };
 
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
-
-  // Auto-focus logic
-  useEffect(() => {
-    if (!isLoading) setTimeout(() => inputRef.current?.focus(), 100);
-  }, [activeChatId, isLoading]);
 
   useEffect(() => {
     const loadChat = async () => {
@@ -53,7 +46,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
   }, [activeChatId]);
 
   const handleSend = async (e) => {
-    e.preventDefault();
+    e?.preventDefault(); // Handle both click and Enter key
     if (!input.trim() || isLoading) return;
 
     const userMessage = { role: "user", content: input };
@@ -128,36 +121,16 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
+      {/* New Input Component Area */}
       <div className="sticky bottom-0 z-10 p-4 border-t md:p-6 bg-slate-950/80 backdrop-blur-md border-slate-800">
-        <form onSubmit={handleSend} className="relative flex items-center max-w-4xl gap-2 mx-auto group">
-          
-          {/* New Voice Input Button */}
-          <div className="flex-shrink-0">
-             <VoiceInput isListening={isListening} onToggle={startListening} />
-          </div>
-
-          <div className="relative flex-1">
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={isListening ? "Listening..." : "Ask Aethel anything..."}
-              className={`w-full bg-slate-900 text-white pl-4 pr-12 py-4 rounded-xl border transition-all shadow-xl outline-none
-                ${isListening ? "border-red-500/50 ring-1 ring-red-500/20" : 
-                isLoading ? "border-indigo-500/50 opacity-50 cursor-wait" : 
-                "border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"}`}
-              disabled={isLoading}
-            />
-            <button 
-              type="submit" 
-              disabled={isLoading || !input.trim()}
-              className="absolute p-2 text-white transition-all -translate-y-1/2 bg-indigo-600 rounded-lg shadow-lg right-2 top-1/2 hover:bg-indigo-500 disabled:opacity-50 disabled:bg-slate-700"
-            >
-              <IoSend size={18} />
-            </button>
-          </div>
-        </form>
+        <MessageInput 
+          input={input}
+          setInput={setInput}
+          isListening={isListening}
+          startListening={startListening}
+          isLoading={isLoading}
+          handleSend={handleSend}
+        />
         <p className="mt-3 text-xs font-medium text-center text-slate-600">
           Aethel-Nexus v1.2 • AI can make mistakes.
         </p>
