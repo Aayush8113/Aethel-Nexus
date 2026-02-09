@@ -1,6 +1,6 @@
-import { IoChatboxOutline, IoAdd, IoCubeOutline, IoTrashOutline } from "react-icons/io5";
+import { IoChatboxOutline, IoAdd, IoCubeOutline, IoTrashOutline, IoSettingsOutline } from "react-icons/io5";
 
-const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, isOpen, isLoading }) => {
+const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, onOpenSettings, isOpen, isLoading }) => {
   return (
     <div className={`
       fixed inset-y-0 left-0 z-30 w-72 bg-slate-900/95 backdrop-blur-xl border-r border-slate-800 transform transition-transform duration-300 ease-in-out
@@ -28,7 +28,6 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, i
             <div className="px-2 space-y-2">
               <div className="w-full h-10 rounded-lg bg-slate-800/50 animate-pulse"></div>
               <div className="w-full h-10 rounded-lg bg-slate-800/50 animate-pulse"></div>
-              <div className="w-3/4 h-10 rounded-lg bg-slate-800/50 animate-pulse"></div>
             </div>
           ) : chats.length === 0 ? (
             <p className="px-2 text-sm italic text-slate-600">No history yet.</p>
@@ -46,15 +45,9 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, i
                   <IoChatboxOutline size={16} />
                   <span className="pr-8 text-sm font-medium truncate">{chat.title}</span>
                 </button>
-                
-                {/* Trash Button - Shows on Hover */}
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteChat(chat._id);
-                  }}
+                  onClick={(e) => { e.stopPropagation(); onDeleteChat(chat._id); }}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-md opacity-0 group-hover:opacity-100 transition-all z-10"
-                  title="Delete Chat"
                 >
                   <IoTrashOutline size={16} />
                 </button>
@@ -63,14 +56,20 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, i
           )}
         </div>
         
+        {/* SETTINGS FOOTER */}
         <div className="pt-4 mt-4 border-t border-slate-800">
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500"></div>
-            <div className="text-sm">
-              <p className="font-medium text-white">Developer</p>
-              <p className="text-xs text-slate-500">Pro Plan</p>
+          <button 
+            onClick={onOpenSettings}
+            className="flex items-center w-full gap-3 p-2 px-2 transition-colors rounded-lg hover:bg-slate-800 group"
+          >
+            <div className="p-2 transition-colors rounded-lg bg-slate-800 group-hover:bg-slate-700 text-slate-400 group-hover:text-indigo-400">
+              <IoSettingsOutline size={20} />
             </div>
-          </div>
+            <div className="text-left">
+              <p className="text-sm font-medium text-slate-200">Settings</p>
+              <p className="text-xs text-slate-500">Voice & Audio</p>
+            </div>
+          </button>
         </div>
       </div>
     </div>
