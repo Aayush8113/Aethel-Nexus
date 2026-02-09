@@ -2,10 +2,9 @@ import { useRef, useEffect } from "react";
 import { IoSend, IoCloseCircleOutline } from "react-icons/io5";
 import VoiceInput from "./VoiceInput";
 
-const MessageInput = ({ input, setInput, isListening, startListening, isLoading, handleSend }) => {
+const MessageInput = ({ input, setInput, isListening, startListening, isLoading, handleSend, isSpeaking, stopSpeaking }) => {
   const textareaRef = useRef(null);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -23,6 +22,18 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
   return (
     <form onSubmit={handleSend} className="relative flex items-end max-w-4xl gap-2 p-2 mx-auto border shadow-xl group bg-slate-900 rounded-xl border-slate-800">
       
+      {/* Floating Stop Button (Only when speaking) */}
+      {isSpeaking && (
+        <button
+          type="button"
+          onClick={stopSpeaking}
+          className="absolute -top-12 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg animate-bounce flex items-center gap-2 hover:bg-indigo-500 z-50 border border-white/20"
+        >
+          <span>Listening...</span> 
+          <span className="opacity-75">(Click to Stop)</span>
+        </button>
+      )}
+
       <div className="flex-shrink-0 mb-1">
          <VoiceInput isListening={isListening} onToggle={startListening} />
       </div>
@@ -42,13 +53,8 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
         />
       </div>
 
-      {/* Clear Button (Only shows if text exists) */}
       {input && !isLoading && (
-        <button
-          type="button"
-          onClick={() => setInput("")}
-          className="mb-3 transition-colors text-slate-500 hover:text-white"
-        >
+        <button type="button" onClick={() => setInput("")} className="mb-3 transition-colors text-slate-500 hover:text-white">
           <IoCloseCircleOutline size={20} />
         </button>
       )}
