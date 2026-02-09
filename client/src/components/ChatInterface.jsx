@@ -4,19 +4,47 @@ import { IoPerson, IoFlash } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
 import CodeBlock from "./CodeBlock";
 import TypingIndicator from "./TypingIndicator";
-import MessageInput from "./MessageInput"; // New Import
+import MessageInput from "./MessageInput";
+import SpeakerButton from "./SpeakerButton"; // New
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 
-const ChatInterface = ({ activeChatId, onChatUpdated }) => {
+const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [readingMsgId, setReadingMsgId] = useState(null); // Track reading
   
   const { error: notifyError } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
   
   const messagesEndRef = useRef(null);
+
+  // Auto-Read Logic
+  useEffect(() => {
+    if (isAutoRead && !isLoading && messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      // Only read if it's a NEW AI message (simple check)
+      if (lastMsg.role === "model" && !isSpeaking) {
+         // Small delay to let UI render
+         setTimeout(() => {
+           speak(lastMsg.content);
+           setReadingMsgId(messages.length - 1);
+         }, 500);
+      }
+    }
+  }, [messages, isLoading, isAutoRead]); // Depend on messages updating
+
+  // Manual Read Logic
+  const handleToggleRead = (text, idx) => {
+    if (readingMsgId === idx && isSpeaking) {
+      stop();
+      setReadingMsgId(null);
+    } else {
+      speak(text);
+      setReadingMsgId(idx);
+    }
+  };
 
   useEffect(() => {
     if (transcript) {
@@ -25,10 +53,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
     }
   }, [transcript, resetTranscript]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
   useEffect(() => {
@@ -46,9 +71,10 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
   }, [activeChatId]);
 
   const handleSend = async (e) => {
-    e?.preventDefault(); // Handle both click and Enter key
+    e?.preventDefault();
     if (!input.trim() || isLoading) return;
 
+    stop(); // Stop speaking if user types
     const userMessage = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
@@ -76,8 +102,15 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
         {messages.map((msg, index) => (
           <div key={index} className={`flex gap-4 animate-fade-in ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "model" && (
-              <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 mt-1 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-500/30">
-                <IoFlash className="text-sm text-white" />
+              <div className="flex flex-col items-center gap-1 mt-1">
+                <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-500/30">
+                  <IoFlash className="text-sm text-white" />
+                </div>
+                {/* Speaker Button */}
+                <SpeakerButton 
+                  isActive={readingMsgId === index && isSpeaking}
+                  onClick={() => handleToggleRead(msg.content, index)}
+                />
               </div>
             )}
             <div className={`max-w-[85%] md:max-w-[75%] rounded-2xl p-4 shadow-sm ${
@@ -121,7 +154,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated }) => {
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      {/* New Input Component Area */}
       <div className="sticky bottom-0 z-10 p-4 border-t md:p-6 bg-slate-950/80 backdrop-blur-md border-slate-800">
         <MessageInput 
           input={input}
