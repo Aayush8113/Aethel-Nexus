@@ -62,3 +62,6 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 * **Day 8:** Implemented Speech-to-Text (Voice Input) using Web Speech API.
 * **Voice Input:** Speech-to-text with audio feedback and pulsing animations.
 * **Smart Input:** Auto-expanding textarea with Enter-to-send support.
+
+* **Text-to-Speech:** AI reads responses aloud with sound-wave animations.
+* **Auto-Read Mode:** Hands-free operation with persistent settings.
