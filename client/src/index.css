@@ -91,3 +91,9 @@ pre { margin: 0 !important; background: transparent !important; }
 .animate-speaking {
   animation: sound-wave 1.5s infinite;
 }
+
+/* Add to bottom */
+img {
+  max-width: 100%;
+  height: auto;
+}
