@@ -65,3 +65,6 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 
 * **Text-to-Speech:** AI reads responses aloud with sound-wave animations.
 * **Auto-Read Mode:** Hands-free operation with persistent settings.
+
+* **Computer Vision:** Analyze images using Gemini 2.0 Flash.
+* **Multimodal Uploads:** Send text and images together.
