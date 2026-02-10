@@ -5,52 +5,39 @@ import ReactMarkdown from "react-markdown";
 import CodeBlock from "./CodeBlock";
 import TypingIndicator from "./TypingIndicator";
 import MessageInput from "./MessageInput";
-import SpeakerButton from "./SpeakerButton"; // New
+import SpeakerButton from "./SpeakerButton";
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 
 const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [image, setImage] = useState(null); // New State
   const [isLoading, setIsLoading] = useState(false);
-  const [readingMsgId, setReadingMsgId] = useState(null); // Track reading
+  const [readingMsgId, setReadingMsgId] = useState(null);
   
   const { error: notifyError } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
   
   const messagesEndRef = useRef(null);
 
-  // Auto-Read Logic
+  // ... (Keep existing Auto-Read & Speech Hooks)
   useEffect(() => {
     if (isAutoRead && !isLoading && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
-      // Only read if it's a NEW AI message (simple check)
       if (lastMsg.role === "model" && !isSpeaking) {
-         // Small delay to let UI render
-         setTimeout(() => {
-           speak(lastMsg.content);
-           setReadingMsgId(messages.length - 1);
-         }, 500);
+         setTimeout(() => { speak(lastMsg.content); setReadingMsgId(messages.length - 1); }, 500);
       }
     }
-  }, [messages, isLoading, isAutoRead]); // Depend on messages updating
+  }, [messages, isLoading, isAutoRead]);
 
-  // Manual Read Logic
   const handleToggleRead = (text, idx) => {
-    if (readingMsgId === idx && isSpeaking) {
-      stop();
-      setReadingMsgId(null);
-    } else {
-      speak(text);
-      setReadingMsgId(idx);
-    }
+    if (readingMsgId === idx && isSpeaking) { stop(); setReadingMsgId(null); } 
+    else { speak(text); setReadingMsgId(idx); }
   };
 
   useEffect(() => {
-    if (transcript) {
-      setInput((prev) => prev + (prev ? " " : "") + transcript);
-      resetTranscript();
-    }
+    if (transcript) { setInput((prev) => prev + (prev ? " " : "") + transcript); resetTranscript(); }
   }, [transcript, resetTranscript]);
 
   const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
@@ -72,22 +59,32 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
   const handleSend = async (e) => {
     e?.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && !image) || isLoading) return;
 
-    stop(); // Stop speaking if user types
-    const userMessage = { role: "user", content: input };
+    stop(); 
+    
+    // Create UI Optimistic Message
+    const userMessage = { 
+       role: "user", 
+       content: input,
+       image: image ? URL.createObjectURL(image) : null 
+    };
+    
     setMessages((prev) => [...prev, userMessage]);
+    
+    // Snapshot values
+    const textToSend = input;
+    const imageToSend = image;
+
     setInput("");
+    setImage(null);
     setIsLoading(true);
 
     try {
-      const response = await sendMessageToAI(input, messages, activeChatId);
+      const response = await sendMessageToAI(textToSend, messages, activeChatId, imageToSend);
       const botMessage = { role: "model", content: response.reply };
       setMessages((prev) => [...prev, botMessage]);
-
-      if (!activeChatId && response.chatId) {
-        onChatUpdated();
-      }
+      if (!activeChatId && response.chatId) onChatUpdated();
     } catch (err) {
       notifyError("Failed to connect to AI Brain");
       setMessages((prev) => [...prev, { role: "model", content: "⚠️ **Connection Error**: I couldn't reach the backend." }]);
@@ -103,21 +100,28 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
           <div key={index} className={`flex gap-4 animate-fade-in ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "model" && (
               <div className="flex flex-col items-center gap-1 mt-1">
-                <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-500/30">
+                <div className={`w-8 h-8 rounded-lg bg-indigo-600 flex-shrink-0 flex items-center justify-center shadow-lg shadow-indigo-500/30 transition-all ${
+                  readingMsgId === index && isSpeaking ? "animate-speaking" : ""
+                }`}>
                   <IoFlash className="text-sm text-white" />
                 </div>
-                {/* Speaker Button */}
-                <SpeakerButton 
-                  isActive={readingMsgId === index && isSpeaking}
-                  onClick={() => handleToggleRead(msg.content, index)}
-                />
+                <SpeakerButton isActive={readingMsgId === index && isSpeaking} onClick={() => handleToggleRead(msg.content, index)} />
               </div>
             )}
+            
             <div className={`max-w-[85%] md:max-w-[75%] rounded-2xl p-4 shadow-sm ${
               msg.role === "user" 
                 ? "bg-slate-800 text-white border border-slate-700 rounded-tr-sm" 
                 : "bg-transparent text-slate-200 border border-slate-800/50 rounded-tl-sm"
             }`}>
+              
+              {/* RENDER USER IMAGE */}
+              {msg.image && (
+                <div className="mb-3 overflow-hidden border rounded-lg border-slate-700">
+                  <img src={msg.image} alt="User Upload" className="object-contain w-auto max-h-60 bg-black/20" />
+                </div>
+              )}
+
               <div className="text-sm leading-7 prose prose-invert max-w-none">
                 <ReactMarkdown 
                   components={{
@@ -135,6 +139,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                 </ReactMarkdown>
               </div>
             </div>
+            
             {msg.role === "user" && (
               <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 mt-1 rounded-lg bg-slate-700">
                 <IoPerson className="text-sm text-slate-400" />
@@ -158,10 +163,14 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
         <MessageInput 
           input={input}
           setInput={setInput}
+          image={image}
+          setImage={setImage}
           isListening={isListening}
           startListening={startListening}
           isLoading={isLoading}
           handleSend={handleSend}
+          isSpeaking={isSpeaking}
+          stopSpeaking={stop}
         />
         <p className="mt-3 text-xs font-medium text-center text-slate-600">
           Aethel-Nexus v1.2 • AI can make mistakes.
