@@ -68,3 +68,5 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 
 * **Computer Vision:** Analyze images using Gemini 2.0 Flash.
 * **Multimodal Uploads:** Send text and images together.
+
+* **Persona System:** Switch between Dev, Pirate, and ELI5 personalities using System Instructions.
