@@ -1,26 +1,30 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API = axios.create({
-  baseURL: 'http://localhost:5000/api',
-});
+const API = axios.create({ baseURL: "http://localhost:5000/api" });
 
-// Updated to accept imageFile
-export const sendMessageToAI = async (message, history, chatId, imageFile) => {
+export const sendMessageToAI = async (
+  message,
+  history,
+  chatId,
+  imageFile,
+  systemInstruction,
+) => {
   try {
     const formData = new FormData();
-    formData.append("message", message || ""); // Allow empty message if image exists
-    
+    formData.append("message", message || "");
     if (chatId) formData.append("chatId", chatId);
-    
-    // FormData requires string values
     formData.append("history", JSON.stringify(history));
+
+    // NEW: Append Persona Instruction
+    if (systemInstruction) {
+      formData.append("systemInstruction", systemInstruction);
+    }
 
     if (imageFile) {
       formData.append("image", imageFile);
     }
 
-    // Axios automatically sets Content-Type to multipart/form-data when data is FormData
-    const response = await API.post('/chat', formData);
+    const response = await API.post("/chat", formData);
     return response.data;
   } catch (error) {
     console.error("API Error:", error);
@@ -28,29 +32,28 @@ export const sendMessageToAI = async (message, history, chatId, imageFile) => {
   }
 };
 
+// ... Keep other exports (fetchAllChats, etc.) exactly as they were
 export const fetchAllChats = async () => {
   try {
-    const response = await API.get('/chat');
-    return response.data;
-  } catch (error) {
+    const res = await API.get("/chat");
+    return res.data;
+  } catch (e) {
     return [];
   }
 };
-
 export const fetchChatById = async (id) => {
   try {
-    const response = await API.get(`/chat/${id}`);
-    return response.data;
-  } catch (error) {
+    const res = await API.get(`/chat/${id}`);
+    return res.data;
+  } catch (e) {
     return null;
   }
 };
-
 export const deleteChat = async (id) => {
   try {
     await API.delete(`/chat/${id}`);
     return true;
-  } catch (error) {
+  } catch (e) {
     return false;
   }
 };
