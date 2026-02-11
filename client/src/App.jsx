@@ -3,12 +3,15 @@ import { Toaster } from 'react-hot-toast';
 import ChatInterface from "./components/ChatInterface";
 import Sidebar from "./components/Sidebar";
 import OfflineBanner from "./components/OfflineBanner";
-import VoiceSettings from "./components/VoiceSettings"; // New
+import VoiceSettings from "./components/VoiceSettings";
+import PersonaModal from "./components/PersonaModal"; // New
 import { fetchAllChats, deleteChat } from "./services/api";
 import { IoMenu } from "react-icons/io5";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { useNotify } from "./hooks/useNotify";
-import { useTextToSpeech } from "./hooks/useTextToSpeech"; // Global Hook
+import { useTextToSpeech } from "./hooks/useTextToSpeech";
+import { useLocalStorage } from "./hooks/useLocalStorage";
+import { PERSONAS } from "./data/personas"; // New
 
 function App() {
   const [chats, setChats] = useState([]);
@@ -16,9 +19,11 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isChatsLoading, setIsChatsLoading] = useState(true);
   
-  // Settings State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isAutoRead, setIsAutoRead] = useState(false);
+  const [isPersonaOpen, setIsPersonaOpen] = useState(false); // New
+  
+  const [isAutoRead, setIsAutoRead] = useLocalStorage("aethel_autoread", false);
+  const [currentPersona, setCurrentPersona] = useLocalStorage("aethel_persona", PERSONAS[0]); // New
   
   const isOnline = useOnlineStatus();
   const { success, error: notifyError } = useNotify();
@@ -37,7 +42,7 @@ function App() {
   };
 
   const handleDeleteChat = async (id) => {
-    if (confirm("Delete this chat permanently?")) {
+    if (confirm("Delete this chat?")) {
       const isDeleted = await deleteChat(id);
       if (isDeleted) {
         setChats(prev => prev.filter(chat => chat._id !== id));
@@ -49,6 +54,11 @@ function App() {
     }
   };
 
+  // Notify on Persona Change
+  useEffect(() => {
+    success(`Persona active: ${currentPersona.name}`);
+  }, [currentPersona.id]);
+
   useEffect(() => { loadChats(); }, [activeChatId]);
 
   return (
@@ -56,7 +66,7 @@ function App() {
       <Toaster position="top-center" />
       {!isOnline && <OfflineBanner />}
 
-      {/* Voice Settings Modal */}
+      {/* Modals */}
       <VoiceSettings 
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -67,11 +77,15 @@ function App() {
         onToggleAutoRead={() => setIsAutoRead(!isAutoRead)}
       />
 
+      <PersonaModal 
+        isOpen={isPersonaOpen}
+        onClose={() => setIsPersonaOpen(false)}
+        currentPersona={currentPersona}
+        onSelect={setCurrentPersona}
+      />
+
       <div className="relative flex flex-1 overflow-hidden">
-        <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="fixed z-30 p-2 bg-gray-800 rounded-md md:hidden top-4 left-4"
-        >
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="fixed z-30 p-2 bg-gray-800 rounded-md md:hidden top-4 left-4">
           <IoMenu />
         </button>
 
@@ -83,18 +97,20 @@ function App() {
           onSelectChat={(id) => { setActiveChatId(id); setIsSidebarOpen(false); }} 
           onNewChat={() => { setActiveChatId(null); setIsSidebarOpen(false); success("New conversation"); }}
           onDeleteChat={handleDeleteChat}
-          onOpenSettings={() => setIsSettingsOpen(true)} // Pass handler
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenPersonas={() => setIsPersonaOpen(true)}
         />
 
         <div className="relative flex-1 h-full">
           <ChatInterface 
             activeChatId={activeChatId} 
             onChatUpdated={loadChats}
-            // Pass Audio Props
             speak={speak}
             stop={stop}
             isSpeaking={isSpeaking}
             isAutoRead={isAutoRead}
+            systemInstruction={currentPersona.instruction} // Pass Instruction
+            currentPersona={currentPersona} // Pass Object for UI
           />
         </div>
       </div>
