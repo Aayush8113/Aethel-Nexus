@@ -10,25 +10,27 @@ if (!process.env.GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Use a model capable of Vision (2.0 Flash or 1.5 Flash)
-const MODEL_VISION = "gemini-2.0-flash";
+// Use Gemini 1.5 Flash or 2.0 Flash (Both support System Instructions)
+const MODEL_NAME = "gemini-2.0-flash";
 
 const generateResponse = async (req, res) => {
   try {
-    const { message, history, chatId } = req.body;
-    const imageFile = req.file; // Caught by Multer
+    const { message, history, chatId, systemInstruction } = req.body; // New Param
+    const imageFile = req.file;
 
     if (!message && !imageFile) {
       return res.status(400).json({ error: "Message or Image required" });
     }
 
-    // 1. Prepare Content for Gemini
-    let promptParts = [];
-    
-    // Add text if exists
-    if (message) promptParts.push(message);
+    // 1. Configure Model with Persona
+    const model = genAI.getGenerativeModel({
+      model: MODEL_NAME,
+      systemInstruction: systemInstruction || "You are a helpful AI assistant.",
+    });
 
-    // Add Image if exists
+    // 2. Prepare Content
+    let promptParts = [];
+    if (message) promptParts.push(message);
     if (imageFile) {
       promptParts.push({
         inlineData: {
@@ -36,44 +38,18 @@ const generateResponse = async (req, res) => {
           mimeType: imageFile.mimetype,
         },
       });
-      console.log(`📸 Processing Image: ${imageFile.originalname}`);
     }
 
-    // 2. Prepare History (Text Context)
-    // Note: We only send text history for context to save tokens/complexity
-    let chatHistory = [];
-    if (history) {
-      try {
-        const parsedHistory = typeof history === 'string' ? JSON.parse(history) : history;
-        if (Array.isArray(parsedHistory)) {
-          const firstUserIndex = parsedHistory.findIndex(msg => msg.role === "user");
-          if (firstUserIndex !== -1) {
-            chatHistory = parsedHistory.slice(firstUserIndex).map(msg => ({
-              role: msg.role === "user" ? "user" : "model",
-              parts: [{ text: msg.content || "" }] // Only text history
-            }));
-          }
-        }
-      } catch (e) {
-        console.warn("History parsing failed", e);
-      }
-    }
-
-    // 3. Send to Google
-    const model = genAI.getGenerativeModel({ model: MODEL_VISION });
-    
-    // For vision, we use generateContent with the image data inline
-    // We append the history as context in the prompt if needed, or rely on the single turn for vision
-    const result = await model.generateContent([ ...promptParts ]);
+    // 3. Generate
+    const result = await model.generateContent(promptParts);
     const response = await result.response;
     const text = response.text();
 
-    // 4. Save to Database
+    // 4. Save to DB
     let chatDoc;
     if (chatId) chatDoc = await Chat.findById(chatId);
 
-    // We mark the message as containing an image, but don't save the base64 to DB to avoid size limits
-    const userContent = imageFile ? `[Uploaded Image] ${message || ""}` : message;
+    const userContent = imageFile ? `[Image] ${message}` : message;
 
     if (chatDoc) {
       chatDoc.messages.push({ role: "user", content: userContent });
@@ -81,16 +57,20 @@ const generateResponse = async (req, res) => {
       await chatDoc.save();
     } else {
       chatDoc = await Chat.create({
-        title: message ? message.substring(0, 40) : "Image Analysis",
-        messages: [{ role: "user", content: userContent }, { role: "model", content: text }]
+        title: message ? message.substring(0, 40) : "New Chat",
+        messages: [
+          { role: "user", content: userContent },
+          { role: "model", content: text },
+        ],
       });
     }
 
     res.status(200).json({ reply: text, chatId: chatDoc._id });
-
   } catch (error) {
-    console.error("🔥 VISION ERROR:", error.message);
-    res.status(500).json({ error: "Vision Processing Failed", details: error.message });
+    console.error("🔥 AI ERROR:", error.message);
+    res
+      .status(500)
+      .json({ error: "AI Processing Failed", details: error.message });
   }
 };
 
@@ -98,27 +78,25 @@ const getAllChats = async (req, res) => {
   try {
     const chats = await Chat.find().sort({ createdAt: -1 });
     res.status(200).json(chats);
-  } catch (error) {
-    res.status(500).json({ error: "Fetch failed" });
+  } catch (e) {
+    res.status(500).json({ error: "Error" });
   }
 };
-
 const getSingleChat = async (req, res) => {
   try {
     const chat = await Chat.findById(req.params.id);
     if (!chat) return res.status(404).json({ error: "Not found" });
     res.status(200).json(chat);
-  } catch (error) {
-    res.status(500).json({ error: "Load failed" });
+  } catch (e) {
+    res.status(500).json({ error: "Error" });
   }
 };
-
 const deleteChat = async (req, res) => {
   try {
     await Chat.findByIdAndDelete(req.params.id);
     res.status(200).json({ message: "Deleted" });
-  } catch (error) {
-    res.status(500).json({ error: "Delete failed" });
+  } catch (e) {
+    res.status(500).json({ error: "Error" });
   }
 };
 
