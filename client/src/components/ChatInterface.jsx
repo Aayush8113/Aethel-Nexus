@@ -6,22 +6,21 @@ import CodeBlock from "./CodeBlock";
 import TypingIndicator from "./TypingIndicator";
 import MessageInput from "./MessageInput";
 import SpeakerButton from "./SpeakerButton";
+import PersonaBadge from "./PersonaBadge"; // New
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 
-const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead }) => {
+const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, currentPersona }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [image, setImage] = useState(null); // New State
+  const [image, setImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [readingMsgId, setReadingMsgId] = useState(null);
   
   const { error: notifyError } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
-  
   const messagesEndRef = useRef(null);
 
-  // ... (Keep existing Auto-Read & Speech Hooks)
   useEffect(() => {
     if (isAutoRead && !isLoading && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
@@ -62,17 +61,9 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     if ((!input.trim() && !image) || isLoading) return;
 
     stop(); 
-    
-    // Create UI Optimistic Message
-    const userMessage = { 
-       role: "user", 
-       content: input,
-       image: image ? URL.createObjectURL(image) : null 
-    };
-    
+    const userMessage = { role: "user", content: input, image: image ? URL.createObjectURL(image) : null };
     setMessages((prev) => [...prev, userMessage]);
     
-    // Snapshot values
     const textToSend = input;
     const imageToSend = image;
 
@@ -81,7 +72,9 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     setIsLoading(true);
 
     try {
-      const response = await sendMessageToAI(textToSend, messages, activeChatId, imageToSend);
+      // Pass systemInstruction to API
+      const response = await sendMessageToAI(textToSend, messages, activeChatId, imageToSend, systemInstruction);
+      
       const botMessage = { role: "model", content: response.reply };
       setMessages((prev) => [...prev, botMessage]);
       if (!activeChatId && response.chatId) onChatUpdated();
@@ -95,6 +88,9 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
   return (
     <div className="relative flex flex-col h-full bg-slate-950 text-slate-100">
+      {/* Badge Indicator */}
+      <PersonaBadge persona={currentPersona} />
+
       <div className="flex-1 p-4 space-y-8 overflow-y-auto md:p-8 scroll-smooth">
         {messages.map((msg, index) => (
           <div key={index} className={`flex gap-4 animate-fade-in ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -114,14 +110,11 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                 ? "bg-slate-800 text-white border border-slate-700 rounded-tr-sm" 
                 : "bg-transparent text-slate-200 border border-slate-800/50 rounded-tl-sm"
             }`}>
-              
-              {/* RENDER USER IMAGE */}
               {msg.image && (
                 <div className="mb-3 overflow-hidden border rounded-lg border-slate-700">
                   <img src={msg.image} alt="User Upload" className="object-contain w-auto max-h-60 bg-black/20" />
                 </div>
               )}
-
               <div className="text-sm leading-7 prose prose-invert max-w-none">
                 <ReactMarkdown 
                   components={{
@@ -147,7 +140,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
             )}
           </div>
         ))}
-
         {isLoading && (
           <div className="flex justify-start gap-4 animate-fade-in">
              <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 mt-1 bg-indigo-600 rounded-lg">
