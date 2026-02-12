@@ -70,3 +70,5 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 * **Multimodal Uploads:** Send text and images together.
 
 * **Persona System:** Switch between Dev, Pirate, and ELI5 personalities using System Instructions.
+
+* **Smart Organization:** Search history, Pin favorites, and Bulk Clear options.
