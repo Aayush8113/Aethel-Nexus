@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { IoChatboxOutline, IoAdd, IoCubeOutline, IoTrashOutline, IoSettingsOutline, IoHappyOutline, IoPushPin, IoPushPinOutline } from "react-icons/io5";
+import { IoChatboxOutline, IoAdd, IoCubeOutline, IoTrashOutline, IoSettingsOutline, IoHappyOutline, IoPin, IoPinOutline } from "react-icons/io5";
 import SearchBar from "./SearchBar";
 
 const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, onTogglePin, onClearAll, onOpenSettings, onOpenPersonas, isOpen, isLoading }) => {
@@ -33,7 +33,7 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, o
     return (
       <div className="mb-6">
         <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-2 flex items-center gap-2">
-           {title === "Pinned" && <IoPushPin className="text-indigo-400" size={10} />}
+           {title === "Pinned" && <IoPin className="text-indigo-400" size={10} />}
            {title}
         </h3>
         <div className="space-y-1">
@@ -48,7 +48,7 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, o
                 }`}
               >
                 <div className={`transition-colors ${chat.isPinned ? "text-indigo-400" : "text-slate-500 group-hover:text-slate-400"}`}>
-                  {chat.isPinned ? <IoPushPin size={14} /> : <IoChatboxOutline size={16} />}
+                  {chat.isPinned ? <IoPin size={14} /> : <IoChatboxOutline size={16} />}
                 </div>
                 <span className="pr-12 text-sm font-medium truncate">{chat.title}</span>
               </button>
@@ -60,7 +60,7 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, o
                     className="p-1.5 text-slate-500 hover:text-indigo-400 hover:bg-slate-800 rounded transition-colors"
                     title={chat.isPinned ? "Unpin Chat" : "Pin Chat"}
                   >
-                    {chat.isPinned ? <IoPushPin size={13} /> : <IoPushPinOutline size={13} />}
+                    {chat.isPinned ? <IoPin size={13} /> : <IoPinOutline size={13} />}
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); onDeleteChat(chat._id); }}
