@@ -4,14 +4,14 @@ import ChatInterface from "./components/ChatInterface";
 import Sidebar from "./components/Sidebar";
 import OfflineBanner from "./components/OfflineBanner";
 import VoiceSettings from "./components/VoiceSettings";
-import PersonaModal from "./components/PersonaModal"; // New
-import { fetchAllChats, deleteChat } from "./services/api";
+import PersonaModal from "./components/PersonaModal";
+import { fetchAllChats, deleteChat, togglePinChat, deleteAllChats } from "./services/api";
 import { IoMenu } from "react-icons/io5";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { useNotify } from "./hooks/useNotify";
 import { useTextToSpeech } from "./hooks/useTextToSpeech";
 import { useLocalStorage } from "./hooks/useLocalStorage";
-import { PERSONAS } from "./data/personas"; // New
+import { PERSONAS } from "./data/personas";
 
 function App() {
   const [chats, setChats] = useState([]);
@@ -20,10 +20,10 @@ function App() {
   const [isChatsLoading, setIsChatsLoading] = useState(true);
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isPersonaOpen, setIsPersonaOpen] = useState(false); // New
+  const [isPersonaOpen, setIsPersonaOpen] = useState(false);
   
   const [isAutoRead, setIsAutoRead] = useLocalStorage("aethel_autoread", false);
-  const [currentPersona, setCurrentPersona] = useLocalStorage("aethel_persona", PERSONAS[0]); // New
+  const [currentPersona, setCurrentPersona] = useLocalStorage("aethel_persona", PERSONAS[0]);
   
   const isOnline = useOnlineStatus();
   const { success, error: notifyError } = useNotify();
@@ -48,16 +48,29 @@ function App() {
         setChats(prev => prev.filter(chat => chat._id !== id));
         if (activeChatId === id) setActiveChatId(null);
         success("Chat deleted");
-      } else {
-        notifyError("Failed to delete");
       }
     }
   };
 
-  // Notify on Persona Change
-  useEffect(() => {
-    success(`Persona active: ${currentPersona.name}`);
-  }, [currentPersona.id]);
+  // NEW: Toggle Pin
+  const handleTogglePin = async (id) => {
+    const updatedChat = await togglePinChat(id);
+    if (updatedChat) {
+      setChats(prev => prev.map(chat => chat._id === id ? { ...chat, isPinned: updatedChat.isPinned } : chat));
+    }
+  };
+
+  // NEW: Clear All
+  const handleClearAll = async () => {
+    if (confirm("⚠️ Delete ALL history? This cannot be undone.")) {
+      const isCleared = await deleteAllChats();
+      if (isCleared) {
+        setChats([]);
+        setActiveChatId(null);
+        success("History cleared");
+      }
+    }
+  };
 
   useEffect(() => { loadChats(); }, [activeChatId]);
 
@@ -66,7 +79,6 @@ function App() {
       <Toaster position="top-center" />
       {!isOnline && <OfflineBanner />}
 
-      {/* Modals */}
       <VoiceSettings 
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -97,6 +109,8 @@ function App() {
           onSelectChat={(id) => { setActiveChatId(id); setIsSidebarOpen(false); }} 
           onNewChat={() => { setActiveChatId(null); setIsSidebarOpen(false); success("New conversation"); }}
           onDeleteChat={handleDeleteChat}
+          onTogglePin={handleTogglePin} // Pass Pin Handler
+          onClearAll={handleClearAll}   // Pass Clear Handler
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenPersonas={() => setIsPersonaOpen(true)}
         />
@@ -109,8 +123,8 @@ function App() {
             stop={stop}
             isSpeaking={isSpeaking}
             isAutoRead={isAutoRead}
-            systemInstruction={currentPersona.instruction} // Pass Instruction
-            currentPersona={currentPersona} // Pass Object for UI
+            systemInstruction={currentPersona.instruction}
+            currentPersona={currentPersona}
           />
         </div>
       </div>
