@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react"; // <--- Added useEffect here
 import { IoCloseCircleOutline, IoImageOutline, IoSend } from "react-icons/io5";
 import ImagePreview from "./ImagePreview";
 import VoiceInput from "./VoiceInput";
@@ -21,8 +21,7 @@ const MessageInput = ({
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height =
-        textareaRef.current.scrollHeight + "px";
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
     }
   }, [input]);
 
