@@ -4,31 +4,23 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
-if (!process.env.GEMINI_API_KEY) {
-  console.error("❌ ERROR: GEMINI_API_KEY is missing.");
-}
+if (!process.env.GEMINI_API_KEY) console.error("❌ ERROR: GEMINI_API_KEY missing.");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// Use Gemini 1.5 Flash or 2.0 Flash (Both support System Instructions)
-const MODEL_NAME = "gemini-2.0-flash";
+const MODEL_NAME = "gemini-2.0-flash"; 
 
 const generateResponse = async (req, res) => {
   try {
-    const { message, history, chatId, systemInstruction } = req.body; // New Param
+    const { message, history, chatId, systemInstruction } = req.body;
     const imageFile = req.file;
 
-    if (!message && !imageFile) {
-      return res.status(400).json({ error: "Message or Image required" });
-    }
+    if (!message && !imageFile) return res.status(400).json({ error: "Input required" });
 
-    // 1. Configure Model with Persona
-    const model = genAI.getGenerativeModel({
+    const model = genAI.getGenerativeModel({ 
       model: MODEL_NAME,
-      systemInstruction: systemInstruction || "You are a helpful AI assistant.",
+      systemInstruction: systemInstruction || "You are a helpful AI assistant."
     });
 
-    // 2. Prepare Content
     let promptParts = [];
     if (message) promptParts.push(message);
     if (imageFile) {
@@ -40,12 +32,10 @@ const generateResponse = async (req, res) => {
       });
     }
 
-    // 3. Generate
     const result = await model.generateContent(promptParts);
     const response = await result.response;
     const text = response.text();
 
-    // 4. Save to DB
     let chatDoc;
     if (chatId) chatDoc = await Chat.findById(chatId);
 
@@ -58,46 +48,49 @@ const generateResponse = async (req, res) => {
     } else {
       chatDoc = await Chat.create({
         title: message ? message.substring(0, 40) : "New Chat",
-        messages: [
-          { role: "user", content: userContent },
-          { role: "model", content: text },
-        ],
+        messages: [{ role: "user", content: userContent }, { role: "model", content: text }]
       });
     }
 
     res.status(200).json({ reply: text, chatId: chatDoc._id });
   } catch (error) {
     console.error("🔥 AI ERROR:", error.message);
-    res
-      .status(500)
-      .json({ error: "AI Processing Failed", details: error.message });
+    res.status(500).json({ error: "AI Failed", details: error.message });
   }
 };
 
 const getAllChats = async (req, res) => {
-  try {
-    const chats = await Chat.find().sort({ createdAt: -1 });
-    res.status(200).json(chats);
-  } catch (e) {
-    res.status(500).json({ error: "Error" });
-  }
+  try { const chats = await Chat.find().sort({ createdAt: -1 }); res.json(chats); } catch(e) { res.status(500).json({error:"Error"}); }
 };
+
 const getSingleChat = async (req, res) => {
+  try { const chat = await Chat.findById(req.params.id); if(!chat) return res.status(404).json({error:"404"}); res.json(chat); } catch(e) { res.status(500).json({error:"Error"}); }
+};
+
+const deleteChat = async (req, res) => {
+  try { await Chat.findByIdAndDelete(req.params.id); res.json({msg:"Deleted"}); } catch(e) { res.status(500).json({error:"Error"}); }
+};
+
+// --- NEW FUNCTIONS ---
+const togglePinChat = async (req, res) => {
   try {
     const chat = await Chat.findById(req.params.id);
-    if (!chat) return res.status(404).json({ error: "Not found" });
+    if (!chat) return res.status(404).json({ error: "Chat not found" });
+    chat.isPinned = !chat.isPinned;
+    await chat.save();
     res.status(200).json(chat);
-  } catch (e) {
-    res.status(500).json({ error: "Error" });
-  }
-};
-const deleteChat = async (req, res) => {
-  try {
-    await Chat.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: "Deleted" });
-  } catch (e) {
-    res.status(500).json({ error: "Error" });
+  } catch (error) {
+    res.status(500).json({ error: "Pin failed" });
   }
 };
 
-module.exports = { generateResponse, getAllChats, getSingleChat, deleteChat };
+const deleteAllChats = async (req, res) => {
+  try {
+    await Chat.deleteMany({});
+    res.status(200).json({ message: "All cleared" });
+  } catch (error) {
+    res.status(500).json({ error: "Clear failed" });
+  }
+};
+
+module.exports = { generateResponse, getAllChats, getSingleChat, deleteChat, togglePinChat, deleteAllChats };
