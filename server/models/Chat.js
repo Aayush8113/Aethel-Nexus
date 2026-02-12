@@ -1,30 +1,29 @@
 const mongoose = require('mongoose');
 
-const chatSchema = new mongoose.Schema({
-  // The title of the conversation (e.g., "React Help")
+const ChatSchema = new mongoose.Schema({
   title: {
     type: String,
-    default: "New Conversation",
-    trim: true
+    required: true,
   },
-  // An array that holds every message in this specific chat session
+  isPinned: {
+    type: Boolean,
+    default: false, // New Field
+  },
   messages: [
     {
       role: {
         type: String,
         required: true,
-        enum: ['user', 'model'] // Only allows 'user' or 'model' (like Gemini API)
       },
       content: {
         type: String,
-        required: true
+        required: true,
       },
-      timestamp: {
-        type: Date,
-        default: Date.now
+      image: {
+        type: String, // Base64 marker or URL
       }
     }
-  ]
-}, { timestamps: true }); // Automatically creates 'createdAt' and 'updatedAt' fields
+  ],
+}, { timestamps: true });
 
-module.exports = mongoose.model('Chat', chatSchema);
+module.exports = mongoose.model('Chat', ChatSchema);
