@@ -72,3 +72,5 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 * **Persona System:** Switch between Dev, Pirate, and ELI5 personalities using System Instructions.
 
 * **Smart Organization:** Search history, Pin favorites, and Bulk Clear options.
+
+* **Artifacts:** Full-screen code editor with split-screen view, copy, and download support.
