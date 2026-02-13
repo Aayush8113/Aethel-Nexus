@@ -1,9 +1,20 @@
+import { useEffect } from "react";
 import { IoClose, IoCodeSlash, IoCopyOutline, IoDownloadOutline } from "react-icons/io5";
 import CodeEditorWindow from "./CodeEditorWindow";
 import { useNotify } from "../hooks/useNotify";
+import { getExtension } from "../utils/languageMap";
 
 const ArtifactPanel = ({ isOpen, onClose, code, language, onChange }) => {
   const { success } = useNotify();
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
 
   if (!isOpen) return null;
 
@@ -16,39 +27,43 @@ const ArtifactPanel = ({ isOpen, onClose, code, language, onChange }) => {
     const element = document.createElement("a");
     const file = new Blob([code], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
-    element.download = `code.${language === "javascript" ? "js" : language}`;
+    element.download = `artifact_${Date.now()}.${getExtension(language)}`;
     document.body.appendChild(element);
     element.click();
+    document.body.removeChild(element);
     success("File downloaded!");
   };
 
   return (
-    <div className={`fixed inset-y-0 right-0 w-full md:w-[50%] bg-slate-900 border-l border-slate-700 shadow-2xl transform transition-transform duration-300 z-40 flex flex-col ${isOpen ? "translate-x-0" : "translate-x-full"}`}>
-      
+    <div className="h-full flex flex-col bg-slate-900 border-l border-slate-700 shadow-2xl animate-slide-in-right">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-800">
-        <div className="flex items-center gap-2 text-indigo-400">
-          <IoCodeSlash size={20} />
-          <h2 className="font-bold text-white">Code Artifact</h2>
-          <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded uppercase">{language}</span>
+      <div className="flex items-center justify-between p-3 border-b border-slate-700 bg-slate-800">
+        <div className="flex items-center gap-3 text-indigo-400">
+          <div className="p-1.5 bg-indigo-500/10 rounded-lg">
+             <IoCodeSlash size={18} />
+          </div>
+          <div>
+            <h2 className="font-bold text-white text-sm">Code Artifact</h2>
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider">{language}</p>
+          </div>
         </div>
         
-        <div className="flex items-center gap-2">
-          <button onClick={handleCopy} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors" title="Copy">
+        <div className="flex items-center gap-1">
+          <button onClick={handleCopy} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors" title="Copy Code">
             <IoCopyOutline size={18} />
           </button>
-          <button onClick={handleDownload} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors" title="Download">
+          <button onClick={handleDownload} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors" title="Download File">
             <IoDownloadOutline size={18} />
           </button>
-          <div className="w-px h-6 bg-slate-600 mx-1"></div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors">
+          <div className="w-px h-6 bg-slate-700 mx-2"></div>
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Close Panel">
             <IoClose size={20} />
           </button>
         </div>
       </div>
 
       {/* Editor Body */}
-      <div className="flex-1 p-0 overflow-hidden">
+      <div className="flex-1 overflow-hidden relative">
         <CodeEditorWindow 
           code={code} 
           language={language} 
