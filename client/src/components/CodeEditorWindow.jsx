@@ -2,15 +2,15 @@ import Editor from "@monaco-editor/react";
 
 const CodeEditorWindow = ({ code, language, onChange, theme = "vs-dark" }) => {
   const handleEditorChange = (value) => {
-    onChange(value);
+    onChange(value || "");
   };
 
   return (
-    <div className="h-full w-full overflow-hidden rounded-xl border border-slate-700 bg-[#1e1e1e] shadow-2xl">
+    <div className="h-full w-full overflow-hidden bg-[#1e1e1e] rounded-b-xl">
       <Editor
         height="100%"
         width="100%"
-        language={language}
+        language={language === "c++" ? "cpp" : language}
         value={code}
         theme={theme}
         onChange={handleEditorChange}
@@ -21,6 +21,8 @@ const CodeEditorWindow = ({ code, language, onChange, theme = "vs-dark" }) => {
           scrollBeyondLastLine: false,
           padding: { top: 16, bottom: 16 },
           fontFamily: "'Fira Code', 'Cascadia Code', Consolas, monospace",
+          fontLigatures: true,
+          smoothScrolling: true,
         }}
       />
     </div>
