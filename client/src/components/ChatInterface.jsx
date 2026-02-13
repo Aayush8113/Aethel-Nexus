@@ -1,26 +1,28 @@
 import { useState, useRef, useEffect } from "react";
 import { sendMessageToAI, fetchChatById } from "../services/api";
-import { IoPerson, IoFlash } from "react-icons/io5";
+import { IoPerson, IoFlash, IoArrowDown } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
 import CodeBlock from "./CodeBlock";
 import TypingIndicator from "./TypingIndicator";
 import MessageInput from "./MessageInput";
 import SpeakerButton from "./SpeakerButton";
-import PersonaBadge from "./PersonaBadge"; // New
+import PersonaBadge from "./PersonaBadge";
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 
-const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, currentPersona }) => {
+const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, currentPersona, onOpenArtifact }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [image, setImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [readingMsgId, setReadingMsgId] = useState(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
   
   const { error: notifyError } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
   const messagesEndRef = useRef(null);
 
+  // Auto-Read Logic
   useEffect(() => {
     if (isAutoRead && !isLoading && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
@@ -30,11 +32,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     }
   }, [messages, isLoading, isAutoRead]);
 
-  const handleToggleRead = (text, idx) => {
-    if (readingMsgId === idx && isSpeaking) { stop(); setReadingMsgId(null); } 
-    else { speak(text); setReadingMsgId(idx); }
-  };
-
+  // Voice Input Logic
   useEffect(() => {
     if (transcript) { setInput((prev) => prev + (prev ? " " : "") + transcript); resetTranscript(); }
   }, [transcript, resetTranscript]);
@@ -42,6 +40,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
+  // Load Chat
   useEffect(() => {
     const loadChat = async () => {
       if (activeChatId) {
@@ -50,17 +49,17 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
         if (data && data.messages) setMessages(data.messages);
         setIsLoading(false);
       } else {
-        setMessages([{ role: "model", content: "Hello! I am **Aethel-Nexus**.  \nReady to solve complex problems. What are we building?" }]);
+        setMessages([{ role: "model", content: `Hello! I am **${currentPersona.name}**.  \nReady to build. What's on your mind?` }]);
       }
     };
     loadChat();
-  }, [activeChatId]);
+  }, [activeChatId, currentPersona]);
 
   const handleSend = async (e) => {
     e?.preventDefault();
     if ((!input.trim() && !image) || isLoading) return;
 
-    stop(); 
+    stop(); // Stop speaking
     const userMessage = { role: "user", content: input, image: image ? URL.createObjectURL(image) : null };
     setMessages((prev) => [...prev, userMessage]);
     
@@ -72,9 +71,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     setIsLoading(true);
 
     try {
-      // Pass systemInstruction to API
       const response = await sendMessageToAI(textToSend, messages, activeChatId, imageToSend, systemInstruction);
-      
       const botMessage = { role: "model", content: response.reply };
       setMessages((prev) => [...prev, botMessage]);
       if (!activeChatId && response.chatId) onChatUpdated();
@@ -87,11 +84,17 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   };
 
   return (
-    <div className="relative flex flex-col h-full bg-slate-950 text-slate-100">
-      {/* Badge Indicator */}
+    <div className="flex flex-col h-full bg-slate-950 text-slate-100 relative w-full">
+      {/* Persona Badge */}
       <PersonaBadge persona={currentPersona} />
 
-      <div className="flex-1 p-4 space-y-8 overflow-y-auto md:p-8 scroll-smooth">
+      <div 
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth w-full"
+        onScroll={(e) => {
+          const bottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
+          setShowScrollBtn(!bottom);
+        }}
+      >
         {messages.map((msg, index) => (
           <div key={index} className={`flex gap-4 animate-fade-in ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "model" && (
@@ -99,29 +102,39 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                 <div className={`w-8 h-8 rounded-lg bg-indigo-600 flex-shrink-0 flex items-center justify-center shadow-lg shadow-indigo-500/30 transition-all ${
                   readingMsgId === index && isSpeaking ? "animate-speaking" : ""
                 }`}>
-                  <IoFlash className="text-sm text-white" />
+                  <IoFlash className="text-white text-sm" />
                 </div>
-                <SpeakerButton isActive={readingMsgId === index && isSpeaking} onClick={() => handleToggleRead(msg.content, index)} />
+                <SpeakerButton 
+                  isActive={readingMsgId === index && isSpeaking} 
+                  onClick={() => {
+                    if (readingMsgId === index && isSpeaking) { stop(); setReadingMsgId(null); } 
+                    else { speak(msg.content); setReadingMsgId(index); }
+                  }} 
+                />
               </div>
             )}
             
-            <div className={`max-w-[85%] md:max-w-[75%] rounded-2xl p-4 shadow-sm ${
+            <div className={`max-w-[85%] md:max-w-[85%] rounded-2xl p-4 shadow-sm ${
               msg.role === "user" 
                 ? "bg-slate-800 text-white border border-slate-700 rounded-tr-sm" 
-                : "bg-transparent text-slate-200 border border-slate-800/50 rounded-tl-sm"
+                : "bg-transparent text-slate-200 border border-slate-800/50 rounded-tl-sm w-full"
             }`}>
               {msg.image && (
-                <div className="mb-3 overflow-hidden border rounded-lg border-slate-700">
-                  <img src={msg.image} alt="User Upload" className="object-contain w-auto max-h-60 bg-black/20" />
+                <div className="mb-3 overflow-hidden rounded-lg border border-slate-700">
+                  <img src={msg.image} alt="User Upload" className="max-h-60 w-auto object-contain bg-black/20" />
                 </div>
               )}
-              <div className="text-sm leading-7 prose prose-invert max-w-none">
+              <div className="prose prose-invert max-w-none text-sm leading-7">
                 <ReactMarkdown 
                   components={{
                     code({node, className, children, ...props}) {
                       const match = /language-(\w+)/.exec(className || '');
                       return match ? (
-                        <CodeBlock language={match[1]} value={String(children).replace(/\n$/, '')} />
+                        <CodeBlock 
+                          language={match[1]} 
+                          value={String(children).replace(/\n$/, '')} 
+                          onOpenArtifact={onOpenArtifact} // <--- Connected Handler
+                        />
                       ) : (
                         <code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>
                       )
@@ -134,24 +147,35 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
             </div>
             
             {msg.role === "user" && (
-              <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 mt-1 rounded-lg bg-slate-700">
-                <IoPerson className="text-sm text-slate-400" />
+              <div className="w-8 h-8 rounded-lg bg-slate-700 flex-shrink-0 flex items-center justify-center mt-1">
+                <IoPerson className="text-slate-400 text-sm" />
               </div>
             )}
           </div>
         ))}
+
         {isLoading && (
-          <div className="flex justify-start gap-4 animate-fade-in">
-             <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 mt-1 bg-indigo-600 rounded-lg">
-                <IoFlash className="text-sm text-white animate-pulse" />
+          <div className="flex gap-4 justify-start animate-fade-in">
+             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex-shrink-0 flex items-center justify-center mt-1">
+                <IoFlash className="text-white text-sm animate-pulse" />
              </div>
              <TypingIndicator />
           </div>
         )}
+        
+        {/* Scroll To Bottom Button */}
+        {showScrollBtn && (
+          <button
+            onClick={scrollToBottom}
+            className="fixed bottom-24 right-8 p-3 bg-slate-800 text-indigo-400 rounded-full shadow-xl border border-slate-700 hover:bg-slate-700 transition-all animate-bounce z-20"
+          >
+            <IoArrowDown size={20} />
+          </button>
+        )}
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      <div className="sticky bottom-0 z-10 p-4 border-t md:p-6 bg-slate-950/80 backdrop-blur-md border-slate-800">
+      <div className="p-4 md:p-6 bg-slate-950/80 backdrop-blur-md border-t border-slate-800 sticky bottom-0 z-10 w-full">
         <MessageInput 
           input={input}
           setInput={setInput}
@@ -164,7 +188,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
           isSpeaking={isSpeaking}
           stopSpeaking={stop}
         />
-        <p className="mt-3 text-xs font-medium text-center text-slate-600">
+        <p className="text-center text-xs text-slate-600 mt-3 font-medium">
           Aethel-Nexus v1.2 • AI can make mistakes.
         </p>
       </div>
