@@ -3,7 +3,7 @@ import { IoEllipsisVertical } from "react-icons/io5";
 import ExportMenu from "./ExportMenu";
 import PersonaBadge from "./PersonaBadge";
 
-const ChatHeader = ({ currentPersona, onExportMarkdown, onExportJSON }) => {
+const ChatHeader = ({ currentPersona, onExportMarkdown, onExportJSON, onCopyAll }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
@@ -17,7 +17,11 @@ const ChatHeader = ({ currentPersona, onExportMarkdown, onExportJSON }) => {
       <div className="relative pointer-events-auto">
         <button 
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="p-2 transition-all border rounded-full shadow-lg bg-slate-900/80 backdrop-blur-md border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800"
+          className={`p-2 backdrop-blur-md border rounded-full transition-all shadow-lg ${
+             isMenuOpen 
+             ? "bg-slate-800 text-white border-slate-600" 
+             : "bg-slate-900/80 text-slate-400 border-slate-700 hover:text-white hover:bg-slate-800"
+          }`}
         >
           <IoEllipsisVertical size={20} />
         </button>
@@ -26,6 +30,7 @@ const ChatHeader = ({ currentPersona, onExportMarkdown, onExportJSON }) => {
           isOpen={isMenuOpen} 
           onExportMarkdown={() => { onExportMarkdown(); setIsMenuOpen(false); }}
           onExportJSON={() => { onExportJSON(); setIsMenuOpen(false); }}
+          onCopyAll={() => { onCopyAll(); setIsMenuOpen(false); }}
         />
         
         {/* Backdrop to close menu */}
