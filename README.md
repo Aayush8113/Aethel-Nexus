@@ -74,3 +74,6 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 * **Smart Organization:** Search history, Pin favorites, and Bulk Clear options.
 
 * **Artifacts:** Full-screen code editor with split-screen view, copy, and download support.
+
+* **Math & Tables:** Latex ($E=mc^2$) and GFM Tables support.
+* **Exporting:** Download chat history as .md or .json.
