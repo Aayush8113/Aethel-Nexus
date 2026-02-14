@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { sendMessageToAI, fetchChatById } from "../services/api";
 import { IoPerson, IoFlash, IoArrowDown } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
+
+// Markdown Plugins
 import remarkGfm from "remark-gfm"; // Tables
 import remarkMath from "remark-math"; // Math Parsing
 import rehypeKatex from "rehype-katex"; // Math Rendering
@@ -11,11 +13,11 @@ import CodeBlock from "./CodeBlock";
 import TypingIndicator from "./TypingIndicator";
 import MessageInput from "./MessageInput";
 import SpeakerButton from "./SpeakerButton";
-import ChatHeader from "./ChatHeader"; // New Header
+import ChatHeader from "./ChatHeader"; // Header
 
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { downloadChatAsMarkdown, downloadChatAsJSON } from "../utils/exportUtils"; // Utils
+import { downloadChatAsMarkdown, downloadChatAsJSON } from "../utils/exportUtils";
 
 const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, currentPersona, onOpenArtifact }) => {
   const [messages, setMessages] = useState([]);
@@ -25,7 +27,10 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const [readingMsgId, setReadingMsgId] = useState(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   
-  const { error: notifyError } = useNotify();
+  // Toggle for Raw Markdown View (Double Click)
+  const [rawViewId, setRawViewId] = useState(null); 
+  
+  const { error: notifyError, success } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
   const messagesEndRef = useRef(null);
 
@@ -56,19 +61,20 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
         if (data && data.messages) setMessages(data.messages);
         setIsLoading(false);
       } else {
-        setMessages([{ role: "model", content: `Hello! I am **${currentPersona.name}**.  \nReady to build. What's on your mind?` }]);
+        setMessages([{ role: "model", content: `Hello! I am **${currentPersona.name}**.  \nReady to solve complex problems. What are we building?` }]);
       }
     };
     loadChat();
   }, [activeChatId, currentPersona]);
 
-  // Export Handlers
-  const handleExportMarkdown = () => {
-    downloadChatAsMarkdown("Aethel_Chat", messages);
-  };
+  // --- Handlers ---
+  const handleExportMarkdown = () => downloadChatAsMarkdown("Aethel_Chat", messages);
+  const handleExportJSON = () => downloadChatAsJSON("Aethel_Chat", messages);
   
-  const handleExportJSON = () => {
-    downloadChatAsJSON("Aethel_Chat", messages);
+  const handleCopyAll = () => {
+    const text = messages.map(m => `${m.role.toUpperCase()}:\n${m.content}`).join("\n\n---\n\n");
+    navigator.clipboard.writeText(text);
+    success("Entire conversation copied to clipboard!");
   };
 
   const handleSend = async (e) => {
@@ -102,15 +108,16 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   return (
     <div className="relative flex flex-col w-full h-full bg-slate-950 text-slate-100">
       
-      {/* New Header */}
+      {/* Header */}
       <ChatHeader 
         currentPersona={currentPersona}
         onExportMarkdown={handleExportMarkdown}
         onExportJSON={handleExportJSON}
+        onCopyAll={handleCopyAll}
       />
 
       <div 
-        className="flex-1 w-full p-4 pt-16 space-y-8 overflow-y-auto md:p-8 scroll-smooth" // Added pt-16 for header space
+        className="flex-1 w-full p-4 pt-16 space-y-8 overflow-y-auto md:p-8 scroll-smooth" 
         onScroll={(e) => {
           const bottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
           setShowScrollBtn(!bottom);
@@ -135,7 +142,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
               </div>
             )}
             
-            <div className={`max-w-[85%] md:max-w-[85%] rounded-2xl p-4 shadow-sm ${
+            <div className={`max-w-[85%] md:max-w-[85%] rounded-2xl p-4 shadow-sm group ${
               msg.role === "user" 
                 ? "bg-slate-800 text-white border border-slate-700 rounded-tr-sm" 
                 : "bg-transparent text-slate-200 border border-slate-800/50 rounded-tl-sm w-full"
@@ -145,28 +152,40 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                   <img src={msg.image} alt="User Upload" className="object-contain w-auto max-h-60 bg-black/20" />
                 </div>
               )}
-              <div className="text-sm leading-7 prose prose-invert max-w-none">
-                <ReactMarkdown 
-                  remarkPlugins={[remarkGfm, remarkMath]}
-                  rehypePlugins={[rehypeKatex, rehypeRaw]}
-                  components={{
-                    code({node, className, children, ...props}) {
-                      const match = /language-(\w+)/.exec(className || '');
-                      return match ? (
-                        <CodeBlock 
-                          language={match[1]} 
-                          value={String(children).replace(/\n$/, '')} 
-                          onOpenArtifact={onOpenArtifact}
-                        />
-                      ) : (
-                        <code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>
-                      )
-                    },
-                    blockquote: ({node, ...props}) => <blockquote className="py-2 pl-4 my-4 italic border-l-4 border-indigo-500 rounded-r text-slate-400 bg-slate-800/30" {...props} />
-                  }}
-                >
-                  {msg.content}
-                </ReactMarkdown>
+              
+              {/* Double Click to Toggle Raw View */}
+              <div 
+                className="text-sm leading-7 prose prose-invert max-w-none"
+                onDoubleClick={() => setRawViewId(rawViewId === index ? null : index)}
+                title="Double-click to toggle raw markdown"
+              >
+                {rawViewId === index ? (
+                   <pre className="p-2 overflow-x-auto font-mono text-xs whitespace-pre-wrap border rounded text-slate-500 bg-black/30 border-slate-700/50">
+                     {msg.content}
+                   </pre>
+                ) : (
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm, remarkMath]}
+                    rehypePlugins={[rehypeKatex, rehypeRaw]}
+                    components={{
+                      code({node, className, children, ...props}) {
+                        const match = /language-(\w+)/.exec(className || '');
+                        return match ? (
+                          <CodeBlock 
+                            language={match[1]} 
+                            value={String(children).replace(/\n$/, '')} 
+                            onOpenArtifact={onOpenArtifact}
+                          />
+                        ) : (
+                          <code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>
+                        )
+                      },
+                      blockquote: ({node, ...props}) => <blockquote className="py-2 pl-4 my-4 italic border-l-4 border-indigo-500 rounded-r text-slate-400 bg-slate-800/30" {...props} />
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                )}
               </div>
             </div>
             
