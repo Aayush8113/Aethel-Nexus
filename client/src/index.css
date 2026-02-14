@@ -120,3 +120,32 @@ img {
   border-radius: 0 0 0.75rem 0.75rem;
   overflow: hidden;
 }
+
+/* Markdown Tables */
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  display: block;
+  overflow-x: auto;
+}
+
+.prose th {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  padding: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  color: #e2e8f0;
+}
+
+.prose td {
+  border: 1px solid #334155;
+  padding: 0.75rem;
+  color: #cbd5e1;
+}
+
+/* Math Font Fix */
+.katex {
+  font-size: 1.1em !important;
+}
