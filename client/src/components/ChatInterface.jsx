@@ -2,13 +2,20 @@ import { useState, useRef, useEffect } from "react";
 import { sendMessageToAI, fetchChatById } from "../services/api";
 import { IoPerson, IoFlash, IoArrowDown } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm"; // Tables
+import remarkMath from "remark-math"; // Math Parsing
+import rehypeKatex from "rehype-katex"; // Math Rendering
+import rehypeRaw from "rehype-raw"; // HTML Support
+
 import CodeBlock from "./CodeBlock";
 import TypingIndicator from "./TypingIndicator";
 import MessageInput from "./MessageInput";
 import SpeakerButton from "./SpeakerButton";
-import PersonaBadge from "./PersonaBadge";
+import ChatHeader from "./ChatHeader"; // New Header
+
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { downloadChatAsMarkdown, downloadChatAsJSON } from "../utils/exportUtils"; // Utils
 
 const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, currentPersona, onOpenArtifact }) => {
   const [messages, setMessages] = useState([]);
@@ -40,7 +47,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
-  // Load Chat
+  // Load Chat Logic
   useEffect(() => {
     const loadChat = async () => {
       if (activeChatId) {
@@ -55,11 +62,20 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     loadChat();
   }, [activeChatId, currentPersona]);
 
+  // Export Handlers
+  const handleExportMarkdown = () => {
+    downloadChatAsMarkdown("Aethel_Chat", messages);
+  };
+  
+  const handleExportJSON = () => {
+    downloadChatAsJSON("Aethel_Chat", messages);
+  };
+
   const handleSend = async (e) => {
     e?.preventDefault();
     if ((!input.trim() && !image) || isLoading) return;
 
-    stop(); // Stop speaking
+    stop(); 
     const userMessage = { role: "user", content: input, image: image ? URL.createObjectURL(image) : null };
     setMessages((prev) => [...prev, userMessage]);
     
@@ -84,12 +100,17 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-950 text-slate-100 relative w-full">
-      {/* Persona Badge */}
-      <PersonaBadge persona={currentPersona} />
+    <div className="relative flex flex-col w-full h-full bg-slate-950 text-slate-100">
+      
+      {/* New Header */}
+      <ChatHeader 
+        currentPersona={currentPersona}
+        onExportMarkdown={handleExportMarkdown}
+        onExportJSON={handleExportJSON}
+      />
 
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth w-full"
+        className="flex-1 w-full p-4 pt-16 space-y-8 overflow-y-auto md:p-8 scroll-smooth" // Added pt-16 for header space
         onScroll={(e) => {
           const bottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
           setShowScrollBtn(!bottom);
@@ -102,7 +123,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                 <div className={`w-8 h-8 rounded-lg bg-indigo-600 flex-shrink-0 flex items-center justify-center shadow-lg shadow-indigo-500/30 transition-all ${
                   readingMsgId === index && isSpeaking ? "animate-speaking" : ""
                 }`}>
-                  <IoFlash className="text-white text-sm" />
+                  <IoFlash className="text-sm text-white" />
                 </div>
                 <SpeakerButton 
                   isActive={readingMsgId === index && isSpeaking} 
@@ -120,12 +141,14 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                 : "bg-transparent text-slate-200 border border-slate-800/50 rounded-tl-sm w-full"
             }`}>
               {msg.image && (
-                <div className="mb-3 overflow-hidden rounded-lg border border-slate-700">
-                  <img src={msg.image} alt="User Upload" className="max-h-60 w-auto object-contain bg-black/20" />
+                <div className="mb-3 overflow-hidden border rounded-lg border-slate-700">
+                  <img src={msg.image} alt="User Upload" className="object-contain w-auto max-h-60 bg-black/20" />
                 </div>
               )}
-              <div className="prose prose-invert max-w-none text-sm leading-7">
+              <div className="text-sm leading-7 prose prose-invert max-w-none">
                 <ReactMarkdown 
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex, rehypeRaw]}
                   components={{
                     code({node, className, children, ...props}) {
                       const match = /language-(\w+)/.exec(className || '');
@@ -133,12 +156,13 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                         <CodeBlock 
                           language={match[1]} 
                           value={String(children).replace(/\n$/, '')} 
-                          onOpenArtifact={onOpenArtifact} // <--- Connected Handler
+                          onOpenArtifact={onOpenArtifact}
                         />
                       ) : (
                         <code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>
                       )
-                    }
+                    },
+                    blockquote: ({node, ...props}) => <blockquote className="py-2 pl-4 my-4 italic border-l-4 border-indigo-500 rounded-r text-slate-400 bg-slate-800/30" {...props} />
                   }}
                 >
                   {msg.content}
@@ -147,27 +171,26 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
             </div>
             
             {msg.role === "user" && (
-              <div className="w-8 h-8 rounded-lg bg-slate-700 flex-shrink-0 flex items-center justify-center mt-1">
-                <IoPerson className="text-slate-400 text-sm" />
+              <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 mt-1 rounded-lg bg-slate-700">
+                <IoPerson className="text-sm text-slate-400" />
               </div>
             )}
           </div>
         ))}
 
         {isLoading && (
-          <div className="flex gap-4 justify-start animate-fade-in">
-             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex-shrink-0 flex items-center justify-center mt-1">
-                <IoFlash className="text-white text-sm animate-pulse" />
+          <div className="flex justify-start gap-4 animate-fade-in">
+             <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 mt-1 bg-indigo-600 rounded-lg">
+                <IoFlash className="text-sm text-white animate-pulse" />
              </div>
              <TypingIndicator />
           </div>
         )}
         
-        {/* Scroll To Bottom Button */}
         {showScrollBtn && (
           <button
             onClick={scrollToBottom}
-            className="fixed bottom-24 right-8 p-3 bg-slate-800 text-indigo-400 rounded-full shadow-xl border border-slate-700 hover:bg-slate-700 transition-all animate-bounce z-20"
+            className="fixed z-20 p-3 text-indigo-400 transition-all border rounded-full shadow-xl bottom-24 right-8 bg-slate-800 border-slate-700 hover:bg-slate-700 animate-bounce"
           >
             <IoArrowDown size={20} />
           </button>
@@ -175,7 +198,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      <div className="p-4 md:p-6 bg-slate-950/80 backdrop-blur-md border-t border-slate-800 sticky bottom-0 z-10 w-full">
+      <div className="sticky bottom-0 z-10 w-full p-4 border-t md:p-6 bg-slate-950/80 backdrop-blur-md border-slate-800">
         <MessageInput 
           input={input}
           setInput={setInput}
@@ -188,7 +211,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
           isSpeaking={isSpeaking}
           stopSpeaking={stop}
         />
-        <p className="text-center text-xs text-slate-600 mt-3 font-medium">
+        <p className="mt-3 text-xs font-medium text-center text-slate-600">
           Aethel-Nexus v1.2 • AI can make mistakes.
         </p>
       </div>
