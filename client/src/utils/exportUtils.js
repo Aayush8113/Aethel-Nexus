@@ -1,3 +1,6 @@
+// Helper to get date string
+const getDateString = () => new Date().toISOString().split('T')[0];
+
 export const downloadChatAsMarkdown = (title, messages) => {
   const content = messages.map(msg => {
     return `### ${msg.role === "user" ? "User" : "Aethel"}\n\n${msg.content}\n`;
@@ -7,19 +10,21 @@ export const downloadChatAsMarkdown = (title, messages) => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${title.replace(/\s+/g, "_")}_chat.md`;
+  // UPDATED LINE:
+  a.download = `Aethel_Chat_${getDateString()}.md`; 
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
 };
 
 export const downloadChatAsJSON = (title, messages) => {
-  const data = JSON.stringify({ title, messages }, null, 2);
+  const data = JSON.stringify({ title, messages, exportedAt: new Date() }, null, 2);
   const blob = new Blob([data], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${title.replace(/\s+/g, "_")}_chat.json`;
+  // UPDATED LINE:
+  a.download = `Aethel_Chat_${getDateString()}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
