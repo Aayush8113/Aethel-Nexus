@@ -149,3 +149,23 @@ img {
 .katex {
   font-size: 1.1em !important;
 }
+
+/* Math Block Scrolling */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 1rem 0;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+/* Scrollbar for Math & Tables */
+.prose table::-webkit-scrollbar,
+.katex-display::-webkit-scrollbar {
+  height: 4px;
+}
+.prose table::-webkit-scrollbar-thumb,
+.katex-display::-webkit-scrollbar-thumb {
+  background: #475569; 
+  border-radius: 4px;
+}
