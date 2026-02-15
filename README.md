@@ -77,3 +77,7 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 
 * **Math & Tables:** Latex ($E=mc^2$) and GFM Tables support.
 * **Exporting:** Download chat history as .md or .json.
+
+* **Native Experience:** Installable PWA with offline support.
+* **Shortcuts:** Keyboard navigation (Press `?` to see list).
+* **Resilience:** Error Boundaries and Lazy Loading for performance.
