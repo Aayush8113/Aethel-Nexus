@@ -2,7 +2,21 @@ import { useState, useRef, useEffect } from "react";
 import { IoChatboxOutline, IoAdd, IoCubeOutline, IoTrashOutline, IoSettingsOutline, IoHappyOutline, IoPin, IoPinOutline } from "react-icons/io5";
 import SearchBar from "./SearchBar";
 
-const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, onTogglePin, onClearAll, onOpenSettings, onOpenPersonas, isOpen, isLoading }) => {
+const Sidebar = ({ 
+  chats, 
+  activeChatId, 
+  onSelectChat, 
+  onNewChat, 
+  onDeleteChat, 
+  onTogglePin, 
+  onClearAll, 
+  onOpenSettings, 
+  onOpenPersonas, 
+  isOpen, 
+  isLoading,
+  isInstallable, // New Prop
+  installApp     // New Prop
+}) => {
   const [search, setSearch] = useState("");
   const searchInputRef = useRef(null);
 
@@ -84,12 +98,14 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, o
       md:relative md:translate-x-0 flex flex-col h-full
     `}>
       <div className="flex flex-col h-full p-4">
-        {/* Header */}
-        <div className="flex items-center gap-3 px-2 mb-6 text-indigo-400">
-          <div className="p-1.5 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
-            <IoCubeOutline size={20} />
+        {/* Header - Gradient Brand */}
+        <div className="flex items-center gap-3 mb-6 px-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <IoCubeOutline size={20} className="text-white" />
           </div>
-          <h1 className="text-lg font-bold tracking-tight text-white">Aethel Nexus</h1>
+          <h1 className="text-xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
+            Aethel
+          </h1>
         </div>
 
         {/* Search */}
@@ -127,10 +143,22 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, o
         
         {/* Footer Actions */}
         <div className="pt-4 mt-4 space-y-1 border-t border-slate-800/50">
+          
+          {/* PWA Install Button (Only shows if installable) */}
+          {isInstallable && (
+            <button 
+              onClick={installApp}
+              className="flex items-center justify-center gap-2 w-full px-4 py-2 mb-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-lg transition-all shadow-lg font-bold text-xs"
+            >
+              <IoCubeOutline />
+              <span>Install App</span>
+            </button>
+          )}
+
           {chats.length > 0 && (
             <button 
               onClick={onClearAll} 
-              className="flex items-center w-full gap-3 p-2 px-3 mb-3 transition-colors border border-transparent rounded-lg hover:bg-red-500/10 group hover:border-red-500/20"
+              className="flex items-center w-full gap-3 p-2 px-3 mb-2 transition-colors border border-transparent rounded-lg hover:bg-red-500/10 group hover:border-red-500/20"
             >
                <div className="transition-colors text-slate-500 group-hover:text-red-400"><IoTrashOutline size={16} /></div>
                <span className="text-xs font-medium text-slate-500 group-hover:text-red-400">Clear History</span>
