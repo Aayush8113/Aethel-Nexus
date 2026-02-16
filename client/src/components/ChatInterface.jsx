@@ -1,19 +1,18 @@
 import { useState, useRef, useEffect } from "react";
 import { sendMessageToAI, fetchChatById } from "../services/api";
-import { IoPerson, IoFlash, IoArrowDown } from "react-icons/io5";
+import { IoPerson, IoFlash, IoArrowDown, IoThumbsUpOutline, IoThumbsDownOutline, IoRefresh } from "react-icons/io5"; // Added Icons
 import ReactMarkdown from "react-markdown";
 
-// Markdown Plugins
-import remarkGfm from "remark-gfm"; // Tables
-import remarkMath from "remark-math"; // Math Parsing
-import rehypeKatex from "rehype-katex"; // Math Rendering
-import rehypeRaw from "rehype-raw"; // HTML Support
+import remarkGfm from "remark-gfm"; 
+import remarkMath from "remark-math"; 
+import rehypeKatex from "rehype-katex"; 
+import rehypeRaw from "rehype-raw"; 
 
 import CodeBlock from "./CodeBlock";
 import TypingIndicator from "./TypingIndicator";
 import MessageInput from "./MessageInput";
 import SpeakerButton from "./SpeakerButton";
-import ChatHeader from "./ChatHeader"; // Header
+import ChatHeader from "./ChatHeader"; 
 
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
@@ -26,13 +25,14 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const [isLoading, setIsLoading] = useState(false);
   const [readingMsgId, setReadingMsgId] = useState(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
-  
-  // Toggle for Raw Markdown View (Double Click)
   const [rawViewId, setRawViewId] = useState(null); 
   
   const { error: notifyError, success } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
   const messagesEndRef = useRef(null);
+
+  // Helper: Format Time
+  const formatTime = (date) => new Date(date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   // Auto-Read Logic
   useEffect(() => {
@@ -61,13 +61,13 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
         if (data && data.messages) setMessages(data.messages);
         setIsLoading(false);
       } else {
-        setMessages([{ role: "model", content: `Hello! I am **${currentPersona.name}**.  \nReady to solve complex problems. What are we building?` }]);
+        setMessages([{ role: "model", content: `Hello! I am **${currentPersona.name}**.  \nReady to solve complex problems. What are we building?`, createdAt: Date.now() }]);
       }
     };
     loadChat();
   }, [activeChatId, currentPersona]);
 
-  // --- Handlers ---
+  // Handlers
   const handleExportMarkdown = () => downloadChatAsMarkdown("Aethel_Chat", messages);
   const handleExportJSON = () => downloadChatAsJSON("Aethel_Chat", messages);
   
@@ -82,7 +82,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     if ((!input.trim() && !image) || isLoading) return;
 
     stop(); 
-    const userMessage = { role: "user", content: input, image: image ? URL.createObjectURL(image) : null };
+    const userMessage = { role: "user", content: input, image: image ? URL.createObjectURL(image) : null, createdAt: Date.now() };
     setMessages((prev) => [...prev, userMessage]);
     
     const textToSend = input;
@@ -94,19 +94,19 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
     try {
       const response = await sendMessageToAI(textToSend, messages, activeChatId, imageToSend, systemInstruction);
-      const botMessage = { role: "model", content: response.reply };
+      const botMessage = { role: "model", content: response.reply, createdAt: Date.now() };
       setMessages((prev) => [...prev, botMessage]);
       if (!activeChatId && response.chatId) onChatUpdated();
     } catch (err) {
       notifyError("Failed to connect to AI Brain");
-      setMessages((prev) => [...prev, { role: "model", content: "⚠️ **Connection Error**: I couldn't reach the backend." }]);
+      setMessages((prev) => [...prev, { role: "model", content: "⚠️ **Connection Error**: I couldn't reach the backend.", createdAt: Date.now() }]);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="relative flex flex-col w-full h-full bg-slate-950 text-slate-100">
+    <div className="flex flex-col h-full bg-slate-950 text-slate-100 relative w-full">
       
       {/* Header */}
       <ChatHeader 
@@ -117,7 +117,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       />
 
       <div 
-        className="flex-1 w-full p-4 pt-16 space-y-8 overflow-y-auto md:p-8 scroll-smooth" 
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth w-full pt-16" 
         onScroll={(e) => {
           const bottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
           setShowScrollBtn(!bottom);
@@ -130,7 +130,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                 <div className={`w-8 h-8 rounded-lg bg-indigo-600 flex-shrink-0 flex items-center justify-center shadow-lg shadow-indigo-500/30 transition-all ${
                   readingMsgId === index && isSpeaking ? "animate-speaking" : ""
                 }`}>
-                  <IoFlash className="text-sm text-white" />
+                  <IoFlash className="text-white text-sm" />
                 </div>
                 <SpeakerButton 
                   isActive={readingMsgId === index && isSpeaking} 
@@ -142,25 +142,24 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
               </div>
             )}
             
-            <div className={`max-w-[85%] md:max-w-[85%] rounded-2xl p-4 shadow-sm group ${
+            <div className={`max-w-[85%] md:max-w-[85%] rounded-2xl p-4 shadow-sm group relative ${
               msg.role === "user" 
                 ? "bg-slate-800 text-white border border-slate-700 rounded-tr-sm" 
                 : "bg-transparent text-slate-200 border border-slate-800/50 rounded-tl-sm w-full"
             }`}>
               {msg.image && (
-                <div className="mb-3 overflow-hidden border rounded-lg border-slate-700">
-                  <img src={msg.image} alt="User Upload" className="object-contain w-auto max-h-60 bg-black/20" />
+                <div className="mb-3 overflow-hidden rounded-lg border border-slate-700">
+                  <img src={msg.image} alt="User Upload" className="max-h-60 w-auto object-contain bg-black/20" />
                 </div>
               )}
               
-              {/* Double Click to Toggle Raw View */}
               <div 
-                className="text-sm leading-7 prose prose-invert max-w-none"
+                className="prose prose-invert max-w-none text-sm leading-7"
                 onDoubleClick={() => setRawViewId(rawViewId === index ? null : index)}
                 title="Double-click to toggle raw markdown"
               >
                 {rawViewId === index ? (
-                   <pre className="p-2 overflow-x-auto font-mono text-xs whitespace-pre-wrap border rounded text-slate-500 bg-black/30 border-slate-700/50">
+                   <pre className="whitespace-pre-wrap text-xs text-slate-500 font-mono bg-black/30 p-2 rounded border border-slate-700/50 overflow-x-auto">
                      {msg.content}
                    </pre>
                 ) : (
@@ -180,27 +179,51 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                           <code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>
                         )
                       },
-                      blockquote: ({node, ...props}) => <blockquote className="py-2 pl-4 my-4 italic border-l-4 border-indigo-500 rounded-r text-slate-400 bg-slate-800/30" {...props} />
+                      blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-indigo-500 bg-slate-900/50 py-2 px-4 my-4 rounded-r-lg text-slate-300 italic shadow-sm" {...props} />
                     }}
                   >
                     {msg.content}
                   </ReactMarkdown>
                 )}
               </div>
+
+               {/* Timestamp & Actions */}
+               <div className="flex justify-between items-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity select-none">
+                  {/* Left: Actions (Model Only) */}
+                  <div className="flex gap-2">
+                    {msg.role === "model" && !isLoading && (
+                        <>
+                          <button className="text-[10px] text-slate-500 hover:text-green-400 transition-colors"><IoThumbsUpOutline /></button>
+                          <button className="text-[10px] text-slate-500 hover:text-red-400 transition-colors"><IoThumbsDownOutline /></button>
+                          {index === messages.length - 1 && (
+                            <button className="text-[10px] flex items-center gap-1 text-slate-500 hover:text-indigo-400 ml-2">
+                               <IoRefresh />
+                            </button>
+                          )}
+                        </>
+                    )}
+                  </div>
+                  
+                  {/* Right: Timestamp */}
+                  <div className="text-[10px] text-slate-600 font-mono">
+                      {formatTime(msg.createdAt)}
+                  </div>
+               </div>
+
             </div>
             
             {msg.role === "user" && (
-              <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 mt-1 rounded-lg bg-slate-700">
-                <IoPerson className="text-sm text-slate-400" />
+              <div className="w-8 h-8 rounded-lg bg-slate-700 flex-shrink-0 flex items-center justify-center mt-1">
+                <IoPerson className="text-slate-400 text-sm" />
               </div>
             )}
           </div>
         ))}
 
         {isLoading && (
-          <div className="flex justify-start gap-4 animate-fade-in">
-             <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 mt-1 bg-indigo-600 rounded-lg">
-                <IoFlash className="text-sm text-white animate-pulse" />
+          <div className="flex gap-4 justify-start animate-fade-in">
+             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex-shrink-0 flex items-center justify-center mt-1">
+                <IoFlash className="text-white text-sm animate-pulse" />
              </div>
              <TypingIndicator />
           </div>
@@ -209,7 +232,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
         {showScrollBtn && (
           <button
             onClick={scrollToBottom}
-            className="fixed z-20 p-3 text-indigo-400 transition-all border rounded-full shadow-xl bottom-24 right-8 bg-slate-800 border-slate-700 hover:bg-slate-700 animate-bounce"
+            className="fixed bottom-24 right-8 p-3 bg-slate-800 text-indigo-400 rounded-full shadow-xl border border-slate-700 hover:bg-slate-700 transition-all animate-bounce z-20"
           >
             <IoArrowDown size={20} />
           </button>
@@ -217,7 +240,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      <div className="sticky bottom-0 z-10 w-full p-4 border-t md:p-6 bg-slate-950/80 backdrop-blur-md border-slate-800">
+      <div className="p-4 md:p-6 bg-slate-950/80 backdrop-blur-md border-t border-slate-800 sticky bottom-0 z-10 w-full">
         <MessageInput 
           input={input}
           setInput={setInput}
@@ -230,7 +253,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
           isSpeaking={isSpeaking}
           stopSpeaking={stop}
         />
-        <p className="mt-3 text-xs font-medium text-center text-slate-600">
+        <p className="text-center text-xs text-slate-600 mt-3 font-medium">
           Aethel-Nexus v1.2 • AI can make mistakes.
         </p>
       </div>
