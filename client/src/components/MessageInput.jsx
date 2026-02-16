@@ -1,31 +1,60 @@
-import { useRef, useEffect } from "react"; // <--- Added useEffect here
+import { useRef, useEffect, useState } from "react";
 import { IoCloseCircleOutline, IoImageOutline, IoSend } from "react-icons/io5";
 import ImagePreview from "./ImagePreview";
 import VoiceInput from "./VoiceInput";
+import PromptMenu from "./PromptMenu"; // New
+import { PROMPTS } from "../data/prompts"; // New
 
-const MessageInput = ({
-  input,
-  setInput,
-  isListening,
-  startListening,
-  isLoading,
-  handleSend,
-  isSpeaking,
-  stopSpeaking,
-  image,
-  setImage,
-}) => {
+const MessageInput = ({ input, setInput, isListening, startListening, isLoading, handleSend, isSpeaking, stopSpeaking, image, setImage }) => {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+  
+  // Prompt State
+  const [showPrompts, setShowPrompts] = useState(false);
+  const [filteredPrompts, setFilteredPrompts] = useState([]);
+  const [promptIndex, setPromptIndex] = useState(0);
 
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
     }
+
+    // Slash Command Logic
+    if (input.startsWith("/")) {
+      const query = input.toLowerCase();
+      const matches = PROMPTS.filter(p => p.label.startsWith(query));
+      setFilteredPrompts(matches);
+      setShowPrompts(matches.length > 0);
+      setPromptIndex(0);
+    } else {
+      setShowPrompts(false);
+    }
   }, [input]);
 
+  const handlePromptSelect = (prompt) => {
+    setInput(prompt.text + " ");
+    setShowPrompts(false);
+    textareaRef.current?.focus();
+  };
+
   const handleKeyDown = (e) => {
+    if (showPrompts) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setPromptIndex(prev => (prev + 1) % filteredPrompts.length);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setPromptIndex(prev => (prev - 1 + filteredPrompts.length) % filteredPrompts.length);
+      } else if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        handlePromptSelect(filteredPrompts[promptIndex]);
+      } else if (e.key === "Escape") {
+        setShowPrompts(false);
+      }
+      return;
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend(e);
@@ -33,98 +62,68 @@ const MessageInput = ({
   };
 
   const handleFileSelect = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setImage(e.target.files[0]);
-    }
+    if (e.target.files && e.target.files[0]) setImage(e.target.files[0]);
   };
 
   return (
-    <form
-      onSubmit={handleSend}
-      className="relative flex flex-col max-w-4xl gap-2 p-2 mx-auto border shadow-xl group bg-slate-900 rounded-xl border-slate-800"
-    >
-      {/* 1. Stop Speaking Button */}
-      {isSpeaking && (
-        <button
-          type="button"
-          onClick={stopSpeaking}
-          className="absolute -top-12 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg animate-bounce flex items-center gap-2 hover:bg-indigo-500 z-50 border border-white/20"
-        >
-          <span>Listening...</span>
-          <span className="opacity-75">(Click to Stop)</span>
-        </button>
-      )}
+    <div className="relative max-w-4xl mx-auto">
+      {/* Prompt Menu Popup */}
+      <PromptMenu 
+        isOpen={showPrompts} 
+        filteredPrompts={filteredPrompts} 
+        activeIndex={promptIndex} 
+        onSelect={handlePromptSelect} 
+      />
 
-      {/* 2. Image Preview */}
-      {image && (
-        <div className="px-2 pt-2">
-          <ImagePreview file={image} onRemove={() => setImage(null)} />
-        </div>
-      )}
-
-      <div className="flex items-end w-full gap-2">
-        {/* 3. Hidden File Input & Trigger */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileSelect}
-          accept="image/*"
-          className="hidden"
-        />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="p-2 mb-1 transition-colors rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800"
-          title="Upload Image"
-          disabled={isLoading}
-        >
-          <IoImageOutline size={22} />
-        </button>
-
-        {/* 4. Voice Input */}
-        <div className="flex-shrink-0 mb-1">
-          <VoiceInput isListening={isListening} onToggle={startListening} />
-        </div>
-
-        {/* 5. Text Area */}
-        <div className="relative flex-1">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              isListening ? "Listening..." : "Ask text or upload image..."
-            }
-            rows={1}
-            className={`w-full bg-transparent text-white pl-2 pr-10 py-3 resize-none outline-none max-h-48 overflow-y-auto
-              ${isListening ? "placeholder-red-400" : "placeholder-slate-500"}
-            `}
-            disabled={isLoading}
-          />
-        </div>
-
-        {/* 6. Clear Text Button */}
-        {input && !isLoading && (
-          <button
-            type="button"
-            onClick={() => setInput("")}
-            className="mb-3 transition-colors text-slate-500 hover:text-white"
-          >
-            <IoCloseCircleOutline size={20} />
+      <form onSubmit={handleSend} className="relative group gap-2 bg-slate-900 p-2 rounded-xl border border-slate-800 shadow-xl flex flex-col z-20">
+        
+        {isSpeaking && (
+          <button type="button" onClick={stopSpeaking} className="absolute -top-12 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg animate-bounce flex items-center gap-2 hover:bg-indigo-500 z-50 border border-white/20">
+            <span>Listening...</span><span className="opacity-75">(Click to Stop)</span>
           </button>
         )}
 
-        {/* 7. Send Button */}
-        <button
-          type="submit"
-          disabled={isLoading || (!input.trim() && !image)}
-          className="p-2 mb-1 text-white transition-all bg-indigo-600 rounded-lg shadow-lg hover:bg-indigo-500 disabled:opacity-50 disabled:bg-slate-700"
-        >
-          <IoSend size={18} />
-        </button>
-      </div>
-    </form>
+        {image && (
+          <div className="px-2 pt-2">
+            <ImagePreview file={image} onRemove={() => setImage(null)} />
+          </div>
+        )}
+
+        <div className="flex items-end gap-2 w-full">
+          <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*" className="hidden" />
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="mb-1 p-2 text-slate-400 hover:text-indigo-400 transition-colors hover:bg-slate-800 rounded-lg" disabled={isLoading}>
+            <IoImageOutline size={22} />
+          </button>
+
+          <div className="flex-shrink-0 mb-1">
+             <VoiceInput isListening={isListening} onToggle={startListening} />
+          </div>
+
+          <div className="relative flex-1">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={isListening ? "Listening..." : "Type '/' for prompts..."}
+              rows={1}
+              className={`w-full bg-transparent text-white pl-2 pr-10 py-3 resize-none outline-none max-h-48 overflow-y-auto ${isListening ? "placeholder-red-400" : "placeholder-slate-500"}`}
+              disabled={isLoading}
+            />
+          </div>
+
+          {input && !isLoading && (
+            <button type="button" onClick={() => { setInput(""); setShowPrompts(false); }} className="mb-3 text-slate-500 hover:text-white transition-colors">
+              <IoCloseCircleOutline size={20} />
+            </button>
+          )}
+
+          <button type="submit" disabled={isLoading || (!input.trim() && !image)} className="mb-1 p-2 bg-indigo-600 rounded-lg hover:bg-indigo-500 disabled:opacity-50 disabled:bg-slate-700 transition-all text-white shadow-lg">
+            <IoSend size={18} />
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 
