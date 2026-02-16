@@ -81,3 +81,7 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 * **Native Experience:** Installable PWA with offline support.
 * **Shortcuts:** Keyboard navigation (Press `?` to see list).
 * **Resilience:** Error Boundaries and Lazy Loading for performance.
+
+* **Slash Commands:** Type `/` to access prompt templates.
+* **Metrics:** Token usage estimation and message timestamps.
+* **UX:** Code block window styling and feedback controls.
