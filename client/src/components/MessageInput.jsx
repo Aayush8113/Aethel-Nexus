@@ -4,6 +4,7 @@ import ImagePreview from "./ImagePreview";
 import VoiceInput from "./VoiceInput";
 import PromptMenu from "./PromptMenu"; // New
 import { PROMPTS } from "../data/prompts"; // New
+import { estimateTokens } from "../utils/tokenUtils"; // New
 
 const MessageInput = ({ input, setInput, isListening, startListening, isLoading, handleSend, isSpeaking, stopSpeaking, image, setImage }) => {
   const textareaRef = useRef(null);
@@ -66,7 +67,7 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
   };
 
   return (
-    <div className="relative max-w-4xl mx-auto">
+    <div className="relative max-w-4xl mx-auto w-full">
       {/* Prompt Menu Popup */}
       <PromptMenu 
         isOpen={showPrompts} 
@@ -91,7 +92,7 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
 
         <div className="flex items-end gap-2 w-full">
           <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*" className="hidden" />
-          <button type="button" onClick={() => fileInputRef.current?.click()} className="mb-1 p-2 text-slate-400 hover:text-indigo-400 transition-colors hover:bg-slate-800 rounded-lg" disabled={isLoading}>
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="mb-1 p-2 text-slate-400 hover:text-indigo-400 transition-colors hover:bg-slate-800 rounded-lg" disabled={isLoading} title="Upload Image">
             <IoImageOutline size={22} />
           </button>
 
@@ -107,7 +108,7 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
               onKeyDown={handleKeyDown}
               placeholder={isListening ? "Listening..." : "Type '/' for prompts..."}
               rows={1}
-              className={`w-full bg-transparent text-white pl-2 pr-10 py-3 resize-none outline-none max-h-48 overflow-y-auto ${isListening ? "placeholder-red-400" : "placeholder-slate-500"}`}
+              className={`w-full bg-transparent text-white pl-2 pr-10 py-3 resize-none outline-none max-h-48 overflow-y-auto text-sm md:text-base ${isListening ? "placeholder-red-400" : "placeholder-slate-500"}`}
               disabled={isLoading}
             />
           </div>
@@ -123,6 +124,11 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
           </button>
         </div>
       </form>
+      
+      {/* Token Counter */}
+      <div className="absolute -bottom-6 right-2 text-[10px] text-slate-600 font-mono transition-opacity opacity-0 group-hover:opacity-100 select-none">
+        {estimateTokens(input)} tokens
+      </div>
     </div>
   );
 };
