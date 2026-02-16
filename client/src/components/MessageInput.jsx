@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"; // <--- Added useEffect here
+import { useRef, useEffect } from "react"; // <--- Added useEffect here
 import { IoCloseCircleOutline, IoImageOutline, IoSend } from "react-icons/io5";
 import ImagePreview from "./ImagePreview";
 import VoiceInput from "./VoiceInput";
@@ -21,8 +21,7 @@ const MessageInput = ({
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height =
-        textareaRef.current.scrollHeight + "px";
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
     }
   }, [input]);
 
@@ -51,7 +50,7 @@ const MessageInput = ({
           onClick={stopSpeaking}
           className="absolute -top-12 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg animate-bounce flex items-center gap-2 hover:bg-indigo-500 z-50 border border-white/20"
         >
-          <span>Listening....</span>
+          <span>Listening...</span>
           <span className="opacity-75">(Click to Stop)</span>
         </button>
       )}
