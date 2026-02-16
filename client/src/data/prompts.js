@@ -7,5 +7,6 @@ export const PROMPTS = [
   { id: "doc", label: "/doc", text: "Generate JSDoc documentation for this function:" },
   { id: "react", label: "/react", text: "Create a React component that..." },
   { id: "sql", label: "/sql", text: "Write an optimized SQL query to..." },
-  { id: "regex", label: "/regex", text: "Write a Regex pattern to match..." }
+  { id: "regex", label: "/regex", text: "Write a Regex pattern to match..." },
+  { id: "json", label: "/json", text: "Convert this data into valid JSON:" }
 ];
