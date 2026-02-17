@@ -85,3 +85,7 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 * **Slash Commands:** Type `/` to access prompt templates.
 * **Metrics:** Token usage estimation and message timestamps.
 * **UX:** Code block window styling and feedback controls.
+
+* **Memory Management:** Visual context usage bar.
+* **Forking:** Edit previous messages to branch conversations.
+* **Power Tools:** Slash commands, token estimation, and timestamps.
