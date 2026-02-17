@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { sendMessageToAI, fetchChatById } from "../services/api";
-import { IoPerson, IoFlash, IoArrowDown, IoThumbsUpOutline, IoThumbsDownOutline, IoRefresh } from "react-icons/io5"; // Added Icons
+import { IoPerson, IoFlash, IoArrowDown, IoThumbsUpOutline, IoThumbsDownOutline, IoRefresh, IoPencil, IoCheckmark, IoClose } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
 
 import remarkGfm from "remark-gfm"; 
@@ -13,6 +13,7 @@ import TypingIndicator from "./TypingIndicator";
 import MessageInput from "./MessageInput";
 import SpeakerButton from "./SpeakerButton";
 import ChatHeader from "./ChatHeader"; 
+import ContextBar from "./ContextBar"; // New
 
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
@@ -27,14 +28,17 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [rawViewId, setRawViewId] = useState(null); 
   
+  // Edit Mode State
+  const [editingMsgId, setEditingMsgId] = useState(null);
+  const [editText, setEditText] = useState("");
+
   const { error: notifyError, success } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
   const messagesEndRef = useRef(null);
 
-  // Helper: Format Time
   const formatTime = (date) => new Date(date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  // Auto-Read Logic
+  // Auto-Read
   useEffect(() => {
     if (isAutoRead && !isLoading && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
@@ -44,7 +48,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     }
   }, [messages, isLoading, isAutoRead]);
 
-  // Voice Input Logic
+  // Voice
   useEffect(() => {
     if (transcript) { setInput((prev) => prev + (prev ? " " : "") + transcript); resetTranscript(); }
   }, [transcript, resetTranscript]);
@@ -52,7 +56,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
-  // Load Chat Logic
+  // Load Chat
   useEffect(() => {
     const loadChat = async () => {
       if (activeChatId) {
@@ -67,14 +71,44 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     loadChat();
   }, [activeChatId, currentPersona]);
 
-  // Handlers
+  // --- Handlers ---
   const handleExportMarkdown = () => downloadChatAsMarkdown("Aethel_Chat", messages);
   const handleExportJSON = () => downloadChatAsJSON("Aethel_Chat", messages);
-  
   const handleCopyAll = () => {
     const text = messages.map(m => `${m.role.toUpperCase()}:\n${m.content}`).join("\n\n---\n\n");
     navigator.clipboard.writeText(text);
-    success("Entire conversation copied to clipboard!");
+    success("Copied to clipboard!");
+  };
+
+  // Edit Handlers
+  const handleEditClick = (index, content) => {
+    setEditingMsgId(index);
+    setEditText(content);
+  };
+
+  const submitEdit = async (index) => {
+    if (!editText.trim()) return;
+    
+    // 1. Slice history
+    const newHistory = messages.slice(0, index);
+    const newMessage = { role: "user", content: editText, createdAt: Date.now() };
+    
+    // 2. Optimistic Update
+    setMessages([...newHistory, newMessage]);
+    setEditingMsgId(null);
+    setIsLoading(true);
+
+    // 3. Resend
+    try {
+      const response = await sendMessageToAI(editText, newHistory, activeChatId, null, systemInstruction);
+      setMessages(prev => [...prev, { role: "model", content: response.reply, createdAt: Date.now() }]);
+      if (!activeChatId && response.chatId) onChatUpdated();
+    } catch (err) {
+      notifyError("Failed to branch conversation.");
+      setMessages(prev => [...prev, { role: "model", content: "⚠️ Error generating new branch.", createdAt: Date.now() }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSend = async (e) => {
@@ -99,7 +133,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       if (!activeChatId && response.chatId) onChatUpdated();
     } catch (err) {
       notifyError("Failed to connect to AI Brain");
-      setMessages((prev) => [...prev, { role: "model", content: "⚠️ **Connection Error**: I couldn't reach the backend.", createdAt: Date.now() }]);
+      setMessages((prev) => [...prev, { role: "model", content: "⚠️ Connection Error", createdAt: Date.now() }]);
     } finally {
       setIsLoading(false);
     }
@@ -108,13 +142,17 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   return (
     <div className="flex flex-col h-full bg-slate-950 text-slate-100 relative w-full">
       
-      {/* Header */}
       <ChatHeader 
         currentPersona={currentPersona}
         onExportMarkdown={handleExportMarkdown}
         onExportJSON={handleExportJSON}
         onCopyAll={handleCopyAll}
       />
+      
+      {/* Context Usage Bar */}
+      <div className="relative w-full z-10">
+         <ContextBar messages={messages} />
+      </div>
 
       <div 
         className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth w-full pt-16" 
@@ -142,75 +180,106 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
               </div>
             )}
             
-            <div className={`max-w-[85%] md:max-w-[85%] rounded-2xl p-4 shadow-sm group relative ${
-              msg.role === "user" 
-                ? "bg-slate-800 text-white border border-slate-700 rounded-tr-sm" 
-                : "bg-transparent text-slate-200 border border-slate-800/50 rounded-tl-sm w-full"
-            }`}>
-              {msg.image && (
-                <div className="mb-3 overflow-hidden rounded-lg border border-slate-700">
-                  <img src={msg.image} alt="User Upload" className="max-h-60 w-auto object-contain bg-black/20" />
+            {/* Message Bubble Area */}
+            {msg.role === "user" && editingMsgId === index ? (
+              // EDIT MODE
+              <div className="w-full max-w-[85%] flex flex-col items-end gap-2 animate-fade-in">
+                <textarea 
+                  value={editText} 
+                  onChange={(e) => setEditText(e.target.value)}
+                  className="w-full bg-slate-800 text-white p-3 rounded-xl border border-indigo-500 focus:outline-none resize-none shadow-xl"
+                  rows={3}
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <button onClick={() => setEditingMsgId(null)} className="px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:bg-slate-800 flex items-center gap-1 transition-colors">
+                     <IoClose /> Cancel
+                  </button>
+                  <button onClick={() => submitEdit(index)} className="px-3 py-1.5 rounded-lg text-xs bg-indigo-600 text-white font-bold hover:bg-indigo-500 flex items-center gap-1 transition-colors shadow-lg">
+                     <IoCheckmark /> Save & Restart
+                  </button>
                 </div>
-              )}
-              
-              <div 
-                className="prose prose-invert max-w-none text-sm leading-7"
-                onDoubleClick={() => setRawViewId(rawViewId === index ? null : index)}
-                title="Double-click to toggle raw markdown"
-              >
-                {rawViewId === index ? (
-                   <pre className="whitespace-pre-wrap text-xs text-slate-500 font-mono bg-black/30 p-2 rounded border border-slate-700/50 overflow-x-auto">
-                     {msg.content}
-                   </pre>
-                ) : (
-                  <ReactMarkdown 
-                    remarkPlugins={[remarkGfm, remarkMath]}
-                    rehypePlugins={[rehypeKatex, rehypeRaw]}
-                    components={{
-                      code({node, className, children, ...props}) {
-                        const match = /language-(\w+)/.exec(className || '');
-                        return match ? (
-                          <CodeBlock 
-                            language={match[1]} 
-                            value={String(children).replace(/\n$/, '')} 
-                            onOpenArtifact={onOpenArtifact}
-                          />
-                        ) : (
-                          <code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>
-                        )
-                      },
-                      blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-indigo-500 bg-slate-900/50 py-2 px-4 my-4 rounded-r-lg text-slate-300 italic shadow-sm" {...props} />
-                    }}
-                  >
-                    {msg.content}
-                  </ReactMarkdown>
-                )}
               </div>
-
-               {/* Timestamp & Actions */}
-               <div className="flex justify-between items-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity select-none">
-                  {/* Left: Actions (Model Only) */}
-                  <div className="flex gap-2">
-                    {msg.role === "model" && !isLoading && (
-                        <>
-                          <button className="text-[10px] text-slate-500 hover:text-green-400 transition-colors"><IoThumbsUpOutline /></button>
-                          <button className="text-[10px] text-slate-500 hover:text-red-400 transition-colors"><IoThumbsDownOutline /></button>
-                          {index === messages.length - 1 && (
-                            <button className="text-[10px] flex items-center gap-1 text-slate-500 hover:text-indigo-400 ml-2">
-                               <IoRefresh />
-                            </button>
-                          )}
-                        </>
-                    )}
+            ) : (
+              // VIEW MODE
+              <div className={`max-w-[85%] md:max-w-[85%] rounded-2xl p-4 shadow-sm group relative ${
+                msg.role === "user" 
+                  ? "bg-slate-800 text-white border border-slate-700 rounded-tr-sm" 
+                  : "bg-transparent text-slate-200 border border-slate-800/50 rounded-tl-sm w-full"
+              }`}>
+                {msg.image && (
+                  <div className="mb-3 overflow-hidden rounded-lg border border-slate-700">
+                    <img src={msg.image} alt="User Upload" className="max-h-60 w-auto object-contain bg-black/20" />
                   </div>
-                  
-                  {/* Right: Timestamp */}
-                  <div className="text-[10px] text-slate-600 font-mono">
-                      {formatTime(msg.createdAt)}
-                  </div>
-               </div>
+                )}
+                
+                <div 
+                  className="prose prose-invert max-w-none text-sm leading-7"
+                  onDoubleClick={() => setRawViewId(rawViewId === index ? null : index)}
+                  title="Double-click to toggle raw markdown"
+                >
+                  {rawViewId === index ? (
+                     <pre className="whitespace-pre-wrap text-xs text-slate-500 font-mono bg-black/30 p-2 rounded border border-slate-700/50 overflow-x-auto">
+                       {msg.content}
+                     </pre>
+                  ) : (
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm, remarkMath]}
+                      rehypePlugins={[rehypeKatex, rehypeRaw]}
+                      components={{
+                        code({node, className, children, ...props}) {
+                          const match = /language-(\w+)/.exec(className || '');
+                          return match ? (
+                            <CodeBlock 
+                              language={match[1]} 
+                              value={String(children).replace(/\n$/, '')} 
+                              onOpenArtifact={onOpenArtifact}
+                            />
+                          ) : (
+                            <code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>
+                          )
+                        },
+                        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-indigo-500 bg-slate-900/50 py-2 px-4 my-4 rounded-r-lg text-slate-300 italic shadow-sm" {...props} />
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  )}
+                </div>
 
-            </div>
+                 {/* Edit Button (User Only) */}
+                 {msg.role === "user" && !isLoading && (
+                    <button 
+                       onClick={() => handleEditClick(index, msg.content)}
+                       className="absolute -left-8 top-2 p-1.5 text-slate-500 hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/50 rounded-full"
+                       title="Edit and Branch"
+                    >
+                       <IoPencil size={14} />
+                    </button>
+                 )}
+
+                 {/* Footer: Timestamp & Actions */}
+                 <div className="flex justify-between items-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity select-none">
+                    <div className="flex gap-2">
+                      {msg.role === "model" && !isLoading && (
+                          <>
+                            <button className="text-[10px] text-slate-500 hover:text-green-400 transition-colors"><IoThumbsUpOutline /></button>
+                            <button className="text-[10px] text-slate-500 hover:text-red-400 transition-colors"><IoThumbsDownOutline /></button>
+                            {index === messages.length - 1 && (
+                              <button className="text-[10px] flex items-center gap-1 text-slate-500 hover:text-indigo-400 ml-2">
+                                 <IoRefresh />
+                              </button>
+                            )}
+                          </>
+                      )}
+                    </div>
+                    
+                    <div className="text-[10px] text-slate-600 font-mono">
+                        {formatTime(msg.createdAt)}
+                    </div>
+                 </div>
+              </div>
+            )}
             
             {msg.role === "user" && (
               <div className="w-8 h-8 rounded-lg bg-slate-700 flex-shrink-0 flex items-center justify-center mt-1">
