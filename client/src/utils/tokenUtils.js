@@ -1,4 +1,4 @@
-// Gemini 2.0 Flash has a huge window, but let's visualize a safe "active memory" chunk (e.g., 32k for fast processing)
+// Gemini 2.0 Flash context window is huge, but let's visualize a "safe" active memory chunk.
 export const MAX_CONTEXT_TOKENS = 32000; 
 
 export const estimateTokens = (text) => {
@@ -12,7 +12,7 @@ export const calculateChatTokens = (messages) => {
 
 export const getTokenColor = (count) => {
   const percentage = (count / MAX_CONTEXT_TOKENS) * 100;
-  if (percentage < 50) return "bg-green-500";
+  if (percentage < 50) return "bg-emerald-500";
   if (percentage < 80) return "bg-yellow-500";
   return "bg-red-500";
 };
