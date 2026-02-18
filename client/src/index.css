@@ -193,3 +193,12 @@ textarea:focus {
 .animate-zoom-in {
   animation: zoom-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Hide scrollbar in Zen Mode */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
