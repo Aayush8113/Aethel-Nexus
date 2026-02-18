@@ -18,19 +18,19 @@ const Lightbox = ({ src, isOpen, onClose }) => {
       onClick={onClose}
     >
       {/* Toolbar */}
-      <div className="absolute top-4 right-4 flex gap-4">
+      <div className="absolute top-4 right-4 flex gap-4 z-50">
         <a 
           href={src} 
           download="aethel_image" 
           onClick={(e) => e.stopPropagation()}
-          className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+          className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors backdrop-blur"
           title="Download"
         >
           <IoDownloadOutline size={24} />
         </a>
         <button 
           onClick={onClose}
-          className="p-3 bg-white/10 hover:bg-red-500/50 rounded-full text-white transition-colors"
+          className="p-3 bg-white/10 hover:bg-red-500/50 rounded-full text-white transition-colors backdrop-blur"
         >
           <IoClose size={24} />
         </button>
