@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { sendMessageToAI, fetchChatById } from "../services/api";
-import { IoPerson, IoFlash, IoArrowDown, IoThumbsUpOutline, IoThumbsDownOutline, IoRefresh, IoPencil, IoCheckmark, IoClose } from "react-icons/io5";
+import { IoPerson, IoFlash, IoArrowDown, IoThumbsUpOutline, IoThumbsDownOutline, IoRefresh, IoPencil, IoCheckmark, IoClose, IoCopyOutline } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
 
 import remarkGfm from "remark-gfm"; 
@@ -13,13 +13,15 @@ import TypingIndicator from "./TypingIndicator";
 import MessageInput from "./MessageInput";
 import SpeakerButton from "./SpeakerButton";
 import ChatHeader from "./ChatHeader"; 
-import ContextBar from "./ContextBar"; // New
+import ContextBar from "./ContextBar"; 
+import Lightbox from "./Lightbox"; // Day 18
+import StopButton from "./StopButton"; // Day 18
 
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { downloadChatAsMarkdown, downloadChatAsJSON } from "../utils/exportUtils";
 
-const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, currentPersona, onOpenArtifact }) => {
+const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [image, setImage] = useState(null);
@@ -28,9 +30,10 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [rawViewId, setRawViewId] = useState(null); 
   
-  // Edit Mode State
+  // Edit & Lightbox State
   const [editingMsgId, setEditingMsgId] = useState(null);
   const [editText, setEditText] = useState("");
+  const [lightboxSrc, setLightboxSrc] = useState(null);
 
   const { error: notifyError, success } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
@@ -38,7 +41,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
   const formatTime = (date) => new Date(date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  // Auto-Read
   useEffect(() => {
     if (isAutoRead && !isLoading && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
@@ -48,7 +50,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     }
   }, [messages, isLoading, isAutoRead]);
 
-  // Voice
   useEffect(() => {
     if (transcript) { setInput((prev) => prev + (prev ? " " : "") + transcript); resetTranscript(); }
   }, [transcript, resetTranscript]);
@@ -56,7 +57,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
-  // Load Chat
   useEffect(() => {
     const loadChat = async () => {
       if (activeChatId) {
@@ -71,16 +71,21 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     loadChat();
   }, [activeChatId, currentPersona]);
 
-  // --- Handlers ---
+  // Handlers
   const handleExportMarkdown = () => downloadChatAsMarkdown("Aethel_Chat", messages);
   const handleExportJSON = () => downloadChatAsJSON("Aethel_Chat", messages);
+  
   const handleCopyAll = () => {
     const text = messages.map(m => `${m.role.toUpperCase()}:\n${m.content}`).join("\n\n---\n\n");
     navigator.clipboard.writeText(text);
     success("Copied to clipboard!");
   };
 
-  // Edit Handlers
+  const handleCopyMessage = (content) => {
+    navigator.clipboard.writeText(content);
+    success("Message copied!");
+  };
+
   const handleEditClick = (index, content) => {
     setEditingMsgId(index);
     setEditText(content);
@@ -88,24 +93,18 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
   const submitEdit = async (index) => {
     if (!editText.trim()) return;
-    
-    // 1. Slice history
     const newHistory = messages.slice(0, index);
     const newMessage = { role: "user", content: editText, createdAt: Date.now() };
-    
-    // 2. Optimistic Update
     setMessages([...newHistory, newMessage]);
     setEditingMsgId(null);
     setIsLoading(true);
 
-    // 3. Resend
     try {
       const response = await sendMessageToAI(editText, newHistory, activeChatId, null, systemInstruction);
       setMessages(prev => [...prev, { role: "model", content: response.reply, createdAt: Date.now() }]);
       if (!activeChatId && response.chatId) onChatUpdated();
     } catch (err) {
       notifyError("Failed to branch conversation.");
-      setMessages(prev => [...prev, { role: "model", content: "⚠️ Error generating new branch.", createdAt: Date.now() }]);
     } finally {
       setIsLoading(false);
     }
@@ -147,15 +146,24 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
         onExportMarkdown={handleExportMarkdown}
         onExportJSON={handleExportJSON}
         onCopyAll={handleCopyAll}
+        isFocusMode={isFocusMode}
+        onToggleFocus={onToggleFocus}
       />
       
-      {/* Context Usage Bar */}
-      <div className="relative w-full z-10">
-         <ContextBar messages={messages} />
-      </div>
+      {!isFocusMode && (
+        <div className="relative w-full z-10 transition-all duration-500">
+           <ContextBar messages={messages} />
+        </div>
+      )}
+
+      {/* Lightbox Modal */}
+      <Lightbox src={lightboxSrc} isOpen={!!lightboxSrc} onClose={() => setLightboxSrc(null)} />
+
+      {/* Stop Generation Button */}
+      <StopButton isGenerating={isLoading} onStop={() => { setIsLoading(false); stop(); }} />
 
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth w-full pt-16" 
+        className={`flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth w-full ${isFocusMode ? "pt-4" : "pt-16"} transition-all duration-500`}
         onScroll={(e) => {
           const bottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
           setShowScrollBtn(!bottom);
@@ -180,9 +188,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
               </div>
             )}
             
-            {/* Message Bubble Area */}
             {msg.role === "user" && editingMsgId === index ? (
-              // EDIT MODE
               <div className="w-full max-w-[85%] flex flex-col items-end gap-2 animate-fade-in">
                 <textarea 
                   value={editText} 
@@ -201,14 +207,13 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                 </div>
               </div>
             ) : (
-              // VIEW MODE
               <div className={`max-w-[85%] md:max-w-[85%] rounded-2xl p-4 shadow-sm group relative ${
                 msg.role === "user" 
                   ? "bg-slate-800 text-white border border-slate-700 rounded-tr-sm" 
                   : "bg-transparent text-slate-200 border border-slate-800/50 rounded-tl-sm w-full"
               }`}>
                 {msg.image && (
-                  <div className="mb-3 overflow-hidden rounded-lg border border-slate-700">
+                  <div className="mb-3 overflow-hidden rounded-lg border border-slate-700 cursor-zoom-in" onClick={() => setLightboxSrc(msg.image)}>
                     <img src={msg.image} alt="User Upload" className="max-h-60 w-auto object-contain bg-black/20" />
                   </div>
                 )}
@@ -247,7 +252,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                   )}
                 </div>
 
-                 {/* Edit Button (User Only) */}
                  {msg.role === "user" && !isLoading && (
                     <button 
                        onClick={() => handleEditClick(index, msg.content)}
@@ -258,9 +262,16 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                     </button>
                  )}
 
-                 {/* Footer: Timestamp & Actions */}
                  <div className="flex justify-between items-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity select-none">
                     <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleCopyMessage(msg.content)} 
+                        className="text-[10px] text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-1"
+                        title="Copy Message Text"
+                      >
+                         <IoCopyOutline />
+                      </button>
+                      
                       {msg.role === "model" && !isLoading && (
                           <>
                             <button className="text-[10px] text-slate-500 hover:text-green-400 transition-colors"><IoThumbsUpOutline /></button>
@@ -309,7 +320,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      <div className="p-4 md:p-6 bg-slate-950/80 backdrop-blur-md border-t border-slate-800 sticky bottom-0 z-10 w-full">
+      <div className={`p-4 md:p-6 bg-slate-950/80 backdrop-blur-md border-t border-slate-800 sticky bottom-0 z-10 w-full transition-all duration-500 ${isFocusMode ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}>
         <MessageInput 
           input={input}
           setInput={setInput}
@@ -326,6 +337,26 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
           Aethel-Nexus v1.2 • AI can make mistakes.
         </p>
       </div>
+
+      {/* Floating Input for Focus Mode (Only appears when Focus Mode is ON) */}
+      {isFocusMode && (
+         <div className="fixed bottom-0 left-0 right-0 p-6 z-40 flex justify-center bg-gradient-to-t from-black via-black/90 to-transparent pt-20">
+            <div className="w-full max-w-3xl">
+              <MessageInput 
+                input={input}
+                setInput={setInput}
+                image={image}
+                setImage={setImage}
+                isListening={isListening}
+                startListening={startListening}
+                isLoading={isLoading}
+                handleSend={handleSend}
+                isSpeaking={isSpeaking}
+                stopSpeaking={stop}
+              />
+            </div>
+         </div>
+      )}
     </div>
   );
 };
