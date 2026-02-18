@@ -185,3 +185,11 @@ textarea:focus {
   border-color: #6366f1;
   box-shadow: 0 0 0 1px #6366f1;
 }
+
+@keyframes zoom-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.animate-zoom-in {
+  animation: zoom-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
