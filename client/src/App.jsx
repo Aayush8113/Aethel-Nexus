@@ -4,6 +4,7 @@ import ChatInterface from "./components/ChatInterface";
 import Sidebar from "./components/Sidebar";
 import OfflineBanner from "./components/OfflineBanner";
 import Spinner from "./components/Spinner";
+import FloatingControls from "./components/FloatingControls"; // Day 18
 
 // Lazy Load Heavy Components
 const VoiceSettings = lazy(() => import("./components/VoiceSettings"));
@@ -18,39 +19,37 @@ import { useNotify } from "./hooks/useNotify";
 import { useTextToSpeech } from "./hooks/useTextToSpeech";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useArtifact } from "./hooks/useArtifact";
-import { usePWA } from "./hooks/usePWA"; // Day 15 Feature
-import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"; // Day 15 Feature
+import { usePWA } from "./hooks/usePWA"; 
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"; 
 import { PERSONAS } from "./data/personas";
 
 function App() {
-  // --- STATE ---
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isChatsLoading, setIsChatsLoading] = useState(true);
   
-  // Modals
+  // Modals & Modes
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPersonaOpen, setIsPersonaOpen] = useState(false);
-  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false); // Day 15 Feature
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false); // Day 18: Zen Mode
   
-  // Persistent Settings
   const [isAutoRead, setIsAutoRead] = useLocalStorage("aethel_autoread", false);
   const [currentPersona, setCurrentPersona] = useLocalStorage("aethel_persona", PERSONAS[0]);
   
-  // Hooks
   const isOnline = useOnlineStatus();
-  const { success, error: notifyError } = useNotify();
+  const { success } = useNotify();
   const { voices, activeVoice, setActiveVoice, speak, stop, isSpeaking } = useTextToSpeech();
   const { isVisible: isArtifactOpen, activeCode, activeLanguage, openArtifact, closeArtifact, setActiveCode } = useArtifact();
-  const { isInstallable, installApp } = usePWA(); // Day 15 Feature
+  const { isInstallable, installApp } = usePWA(); 
 
-  // Global Keyboard Shortcuts (Day 15 Feature)
   useKeyboardShortcuts({
     "n": () => { setActiveChatId(null); success("New conversation"); },
     "s": () => setIsSettingsOpen(true),
     "p": () => setIsPersonaOpen(true),
     "?": () => setIsShortcutsOpen(true),
+    "f": () => setIsFocusMode(prev => !prev), // Toggle Focus
     "Escape": () => {
       setIsSettingsOpen(false);
       setIsPersonaOpen(false);
@@ -59,7 +58,6 @@ function App() {
     }
   });
 
-  // --- ACTIONS ---
   const loadChats = async () => {
     setIsChatsLoading(true);
     try {
@@ -104,7 +102,6 @@ function App() {
       <Toaster position="top-center" />
       {!isOnline && <OfflineBanner />}
 
-      {/* --- LAZY LOADED MODALS --- */}
       <Suspense fallback={null}>
         <VoiceSettings 
           isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)}
@@ -120,31 +117,42 @@ function App() {
         />
       </Suspense>
 
-      {/* --- MAIN LAYOUT --- */}
       <div className="flex flex-1 overflow-hidden relative">
         
-        {/* Mobile Menu Toggle */}
-        <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-          className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800/90 backdrop-blur rounded-lg border border-slate-700 shadow-xl text-white"
-        >
-          <IoMenu size={20} />
-        </button>
+        {/* Floating Controls for Focus Mode */}
+        <FloatingControls isFocusMode={isFocusMode} onExitFocus={() => setIsFocusMode(false)} />
 
-        <Sidebar 
-          chats={chats} activeChatId={activeChatId}
-          isOpen={isSidebarOpen} isLoading={isChatsLoading}
-          onSelectChat={(id) => { setActiveChatId(id); setIsSidebarOpen(false); }} 
-          onNewChat={() => { setActiveChatId(null); setIsSidebarOpen(false); success("New conversation"); }}
-          onDeleteChat={handleDeleteChat} onTogglePin={handleTogglePin} onClearAll={handleClearAll}
-          onOpenSettings={() => setIsSettingsOpen(true)} onOpenPersonas={() => setIsPersonaOpen(true)}
-          isInstallable={isInstallable} installApp={installApp} // Pass PWA props
-        />
+        {/* Mobile Toggle (Hidden in Focus Mode) */}
+        {!isFocusMode && (
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+            className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800/90 backdrop-blur rounded-lg border border-slate-700 shadow-xl text-white"
+          >
+            <IoMenu size={20} />
+          </button>
+        )}
 
-        {/* --- SPLIT SCREEN CONTAINER --- */}
-        <div className="flex-1 relative h-full flex transition-all duration-300 overflow-hidden">
+        {/* Sidebar (Hidden in Focus Mode on Desktop) */}
+        <div className={`
+           ${isFocusMode ? "md:-translate-x-full md:w-0" : "md:translate-x-0 md:w-72"}
+           transition-all duration-500 ease-in-out h-full relative z-30
+        `}>
+           <Sidebar 
+             chats={chats} activeChatId={activeChatId}
+             isOpen={isSidebarOpen} 
+             onClose={() => setIsSidebarOpen(false)} // Pass for swipe
+             isLoading={isChatsLoading}
+             onSelectChat={(id) => { setActiveChatId(id); setIsSidebarOpen(false); }} 
+             onNewChat={() => { setActiveChatId(null); setIsSidebarOpen(false); success("New conversation"); }}
+             onDeleteChat={handleDeleteChat} onTogglePin={handleTogglePin} onClearAll={handleClearAll}
+             onOpenSettings={() => setIsSettingsOpen(true)} onOpenPersonas={() => setIsPersonaOpen(true)}
+             isInstallable={isInstallable} installApp={installApp}
+           />
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 relative h-full flex transition-all duration-300 overflow-hidden bg-slate-950">
           
-          {/* Left: Chat Interface */}
           <div className={`
              relative h-full flex flex-col transition-all duration-500 ease-in-out
              ${isArtifactOpen ? "hidden lg:flex w-full lg:w-1/2 border-r border-slate-800" : "w-full"}
@@ -153,11 +161,12 @@ function App() {
               activeChatId={activeChatId} onChatUpdated={loadChats}
               speak={speak} stop={stop} isSpeaking={isSpeaking} isAutoRead={isAutoRead}
               systemInstruction={currentPersona.instruction} currentPersona={currentPersona}
-              onOpenArtifact={openArtifact} 
+              onOpenArtifact={openArtifact}
+              isFocusMode={isFocusMode} // Pass Focus Mode
+              onToggleFocus={() => setIsFocusMode(!isFocusMode)}
             />
           </div>
 
-          {/* Right: Artifact Panel (Editor) */}
           <div className={`
              bg-slate-900 shadow-2xl transition-all duration-500 ease-in-out
              ${isArtifactOpen 
