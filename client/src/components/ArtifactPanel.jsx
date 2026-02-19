@@ -35,7 +35,7 @@ const ArtifactPanel = ({ isOpen, onClose, code, language, onChange }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-slate-900 border-l border-slate-700 shadow-2xl animate-slide-in-right">
+    <div className="h-full flex flex-col bg-[#1e1e1e] border-l border-slate-700 shadow-2xl animate-slide-in-right">
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-slate-700 bg-slate-800">
         <div className="flex items-center gap-3 text-indigo-400">
