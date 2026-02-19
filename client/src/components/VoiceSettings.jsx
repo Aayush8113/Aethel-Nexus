@@ -1,8 +1,10 @@
-import { IoClose, IoVolumeHigh, IoConstruct } from "react-icons/io5";
+import { IoClose, IoOptionsOutline, IoConstruct } from "react-icons/io5";
 import { useState } from "react";
+import { useCodeTheme } from "../hooks/useCodeTheme";
 
 const VoiceSettings = ({ isOpen, onClose, voices, activeVoice, onVoiceChange, isAutoRead, onToggleAutoRead }) => {
-  const [activeTab, setActiveTab] = useState("voice");
+  const [activeTab, setActiveTab] = useState("prefs");
+  const { themes, activeThemeId, setActiveThemeId } = useCodeTheme(); // New hook
 
   if (!isOpen) return null;
 
@@ -12,55 +14,63 @@ const VoiceSettings = ({ isOpen, onClose, voices, activeVoice, onVoiceChange, is
         <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white"><IoClose size={24} /></button>
         
         <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-          {activeTab === "voice" ? <IoVolumeHigh className="text-indigo-400"/> : <IoConstruct className="text-indigo-400"/>}
-          Settings
+          {activeTab === "prefs" ? <IoOptionsOutline className="text-indigo-400"/> : <IoConstruct className="text-indigo-400"/>}
+          App Settings
         </h2>
 
         {/* Tabs */}
         <div className="flex gap-1 bg-slate-950/50 p-1 rounded-lg mb-6">
            <button 
-             onClick={() => setActiveTab("voice")} 
-             className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${activeTab === "voice" ? "bg-slate-800 text-white shadow" : "text-slate-500 hover:text-slate-300"}`}
+             onClick={() => setActiveTab("prefs")} 
+             className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${activeTab === "prefs" ? "bg-slate-800 text-white shadow" : "text-slate-500 hover:text-slate-300"}`}
            >
-             Voice & Audio
+             Preferences
            </button>
            <button 
              onClick={() => setActiveTab("system")} 
              className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${activeTab === "system" ? "bg-slate-800 text-white shadow" : "text-slate-500 hover:text-slate-300"}`}
            >
-             System Info
+             System
            </button>
         </div>
 
-        {activeTab === "voice" ? (
+        {activeTab === "prefs" ? (
           <div className="space-y-6">
+            {/* Auto-Read Toggle */}
             <div className="flex items-center justify-between p-3 bg-slate-800 rounded-xl border border-slate-700">
               <div>
                 <p className="font-bold text-sm text-white">Auto-Read Responses</p>
                 <p className="text-xs text-slate-400">Speak AI replies automatically</p>
               </div>
-              <button 
-                onClick={onToggleAutoRead}
-                className={`w-12 h-6 rounded-full p-1 transition-colors ${isAutoRead ? "bg-indigo-600" : "bg-slate-600"}`}
-              >
+              <button onClick={onToggleAutoRead} className={`w-12 h-6 rounded-full p-1 transition-colors ${isAutoRead ? "bg-indigo-600" : "bg-slate-600"}`}>
                 <div className={`w-4 h-4 rounded-full bg-white transform transition-transform ${isAutoRead ? "translate-x-6" : "translate-x-0"}`} />
               </button>
             </div>
 
+            {/* Voice Selector */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">AI Voice Model</label>
               <select 
                 value={activeVoice?.name || ""}
-                onChange={(e) => {
-                  const selected = voices.find(v => v.name === e.target.value);
-                  onVoiceChange(selected);
-                }}
+                onChange={(e) => onVoiceChange(voices.find(v => v.name === e.target.value))}
                 className="w-full bg-slate-800 text-white p-3 rounded-xl border border-slate-700 focus:border-indigo-500 outline-none text-sm appearance-none"
               >
                 {voices.map((voice) => (
-                  <option key={voice.name} value={voice.name}>
-                    {voice.name} ({voice.lang})
-                  </option>
+                  <option key={voice.name} value={voice.name}>{voice.name} ({voice.lang})</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Code Theme Selector */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Code Syntax Theme</label>
+              <select 
+                value={activeThemeId}
+                onChange={(e) => setActiveThemeId(e.target.value)}
+                className="w-full bg-slate-800 text-white p-3 rounded-xl border border-slate-700 focus:border-indigo-500 outline-none text-sm appearance-none"
+              >
+                {themes.map((theme) => (
+                  <option key={theme.id} value={theme.id}>{theme.name}</option>
                 ))}
               </select>
             </div>
