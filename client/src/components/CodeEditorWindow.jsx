@@ -6,7 +6,7 @@ const CodeEditorWindow = ({ code, language, onChange, theme = "vs-dark" }) => {
   };
 
   return (
-    <div className="h-full w-full overflow-hidden bg-[#1e1e1e] rounded-b-xl">
+    <div className="h-full w-full overflow-hidden bg-[#1e1e1e]">
       <Editor
         height="100%"
         width="100%"
@@ -20,9 +20,12 @@ const CodeEditorWindow = ({ code, language, onChange, theme = "vs-dark" }) => {
           wordWrap: "on",
           scrollBeyondLastLine: false,
           padding: { top: 16, bottom: 16 },
-          fontFamily: "'Fira Code', 'Cascadia Code', Consolas, monospace",
+          fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
           fontLigatures: true,
           smoothScrolling: true,
+          cursorBlinking: "smooth",
+          cursorSmoothCaretAnimation: "on",
+          formatOnPaste: true,
         }}
       />
     </div>
