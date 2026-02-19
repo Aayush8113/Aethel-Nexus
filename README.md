@@ -89,3 +89,7 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 * **Memory Management:** Visual context usage bar.
 * **Forking:** Edit previous messages to branch conversations.
 * **Power Tools:** Slash commands, token estimation, and timestamps.
+
+* **Command Palette:** Press `Cmd+K` or `Ctrl+K` for global navigation.
+* **Themes:** Selectable code syntax themes in Settings.
+* **Navigation:** Smart Scroll-to-Top and Bottom buttons for long chats.
