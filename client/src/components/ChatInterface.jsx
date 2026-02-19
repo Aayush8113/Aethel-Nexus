@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { sendMessageToAI, fetchChatById } from "../services/api";
-import { IoPerson, IoFlash, IoArrowDown, IoThumbsUpOutline, IoThumbsDownOutline, IoRefresh, IoPencil, IoCheckmark, IoClose, IoCopyOutline } from "react-icons/io5";
+import { IoPerson, IoFlash, IoThumbsUpOutline, IoThumbsDownOutline, IoRefresh, IoPencil, IoCheckmark, IoClose, IoCopyOutline } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
 
 import remarkGfm from "remark-gfm"; 
@@ -14,8 +14,9 @@ import MessageInput from "./MessageInput";
 import SpeakerButton from "./SpeakerButton";
 import ChatHeader from "./ChatHeader"; 
 import ContextBar from "./ContextBar"; 
-import Lightbox from "./Lightbox"; // Day 18
-import StopButton from "./StopButton"; // Day 18
+import Lightbox from "./Lightbox"; 
+import StopButton from "./StopButton"; 
+import ScrollFab from "./ScrollFab"; // New
 
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
@@ -27,8 +28,11 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const [image, setImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [readingMsgId, setReadingMsgId] = useState(null);
-  const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [rawViewId, setRawViewId] = useState(null); 
+  
+  // Scroll State
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   
   // Edit & Lightbox State
   const [editingMsgId, setEditingMsgId] = useState(null);
@@ -37,7 +41,9 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
   const { error: notifyError, success } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
+  
   const messagesEndRef = useRef(null);
+  const containerRef = useRef(null); // Ref for scrolling top
 
   const formatTime = (date) => new Date(date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -54,7 +60,9 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     if (transcript) { setInput((prev) => prev + (prev ? " " : "") + transcript); resetTranscript(); }
   }, [transcript, resetTranscript]);
 
-  const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
+  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToTop = () => containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
   useEffect(() => {
@@ -71,16 +79,21 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     loadChat();
   }, [activeChatId, currentPersona]);
 
-  // Handlers
+  // Scroll Handler
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+    setShowScrollBottom(!isAtBottom);
+    setShowScrollTop(scrollTop > 500);
+  };
+
   const handleExportMarkdown = () => downloadChatAsMarkdown("Aethel_Chat", messages);
   const handleExportJSON = () => downloadChatAsJSON("Aethel_Chat", messages);
-  
   const handleCopyAll = () => {
     const text = messages.map(m => `${m.role.toUpperCase()}:\n${m.content}`).join("\n\n---\n\n");
     navigator.clipboard.writeText(text);
     success("Copied to clipboard!");
   };
-
   const handleCopyMessage = (content) => {
     navigator.clipboard.writeText(content);
     success("Message copied!");
@@ -138,9 +151,23 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     }
   };
 
+  const ThemedInput = () => (
+    <MessageInput 
+      input={input}
+      setInput={setInput}
+      image={image}
+      setImage={setImage}
+      isListening={isListening}
+      startListening={startListening}
+      isLoading={isLoading}
+      handleSend={handleSend}
+      isSpeaking={isSpeaking}
+      stopSpeaking={stop}
+    />
+  );
+
   return (
     <div className="flex flex-col h-full bg-slate-950 text-slate-100 relative w-full">
-      
       <ChatHeader 
         currentPersona={currentPersona}
         onExportMarkdown={handleExportMarkdown}
@@ -156,18 +183,14 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
         </div>
       )}
 
-      {/* Lightbox Modal */}
       <Lightbox src={lightboxSrc} isOpen={!!lightboxSrc} onClose={() => setLightboxSrc(null)} />
-
-      {/* Stop Generation Button */}
       <StopButton isGenerating={isLoading} onStop={() => { setIsLoading(false); stop(); }} />
+      <ScrollFab showBottom={showScrollBottom} showTop={showScrollTop} onScrollToBottom={scrollToBottom} onScrollToTop={scrollToTop} />
 
       <div 
+        ref={containerRef}
         className={`flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth w-full ${isFocusMode ? "pt-4" : "pt-16"} transition-all duration-500`}
-        onScroll={(e) => {
-          const bottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
-          setShowScrollBtn(!bottom);
-        }}
+        onScroll={handleScroll}
       >
         {messages.map((msg, index) => (
           <div key={index} className={`flex gap-4 animate-fade-in ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -264,11 +287,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
                  <div className="flex justify-between items-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity select-none">
                     <div className="flex gap-2">
-                      <button 
-                        onClick={() => handleCopyMessage(msg.content)} 
-                        className="text-[10px] text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-1"
-                        title="Copy Message Text"
-                      >
+                      <button onClick={() => handleCopyMessage(msg.content)} className="text-[10px] text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-1" title="Copy Message Text">
                          <IoCopyOutline />
                       </button>
                       
@@ -284,10 +303,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                           </>
                       )}
                     </div>
-                    
-                    <div className="text-[10px] text-slate-600 font-mono">
-                        {formatTime(msg.createdAt)}
-                    </div>
+                    <div className="text-[10px] text-slate-600 font-mono">{formatTime(msg.createdAt)}</div>
                  </div>
               </div>
             )}
@@ -308,53 +324,17 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
              <TypingIndicator />
           </div>
         )}
-        
-        {showScrollBtn && (
-          <button
-            onClick={scrollToBottom}
-            className="fixed bottom-24 right-8 p-3 bg-slate-800 text-indigo-400 rounded-full shadow-xl border border-slate-700 hover:bg-slate-700 transition-all animate-bounce z-20"
-          >
-            <IoArrowDown size={20} />
-          </button>
-        )}
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
       <div className={`p-4 md:p-6 bg-slate-950/80 backdrop-blur-md border-t border-slate-800 sticky bottom-0 z-10 w-full transition-all duration-500 ${isFocusMode ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}>
-        <MessageInput 
-          input={input}
-          setInput={setInput}
-          image={image}
-          setImage={setImage}
-          isListening={isListening}
-          startListening={startListening}
-          isLoading={isLoading}
-          handleSend={handleSend}
-          isSpeaking={isSpeaking}
-          stopSpeaking={stop}
-        />
-        <p className="text-center text-xs text-slate-600 mt-3 font-medium">
-          Aethel-Nexus v1.2 • AI can make mistakes.
-        </p>
+        <ThemedInput />
+        <p className="text-center text-xs text-slate-600 mt-3 font-medium">Aethel-Nexus v1.2 • AI can make mistakes.</p>
       </div>
 
-      {/* Floating Input for Focus Mode (Only appears when Focus Mode is ON) */}
       {isFocusMode && (
-         <div className="fixed bottom-0 left-0 right-0 p-6 z-40 flex justify-center bg-gradient-to-t from-black via-black/90 to-transparent pt-20">
-            <div className="w-full max-w-3xl">
-              <MessageInput 
-                input={input}
-                setInput={setInput}
-                image={image}
-                setImage={setImage}
-                isListening={isListening}
-                startListening={startListening}
-                isLoading={isLoading}
-                handleSend={handleSend}
-                isSpeaking={isSpeaking}
-                stopSpeaking={stop}
-              />
-            </div>
+         <div className="fixed bottom-0 left-0 right-0 p-6 z-40 flex justify-center bg-gradient-to-t from-black via-black/90 to-transparent pt-20 animate-fade-in-up">
+            <div className="w-full max-w-3xl"><ThemedInput /></div>
          </div>
       )}
     </div>
