@@ -1,10 +1,15 @@
 import { IoCopyOutline, IoCheckmarkOutline, IoResize } from "react-icons/io5";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { oneDark, dracula, materialDark, atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useState } from "react";
+import { useCodeTheme } from "../hooks/useCodeTheme";
+
+// Map IDs to actual styles
+const themeMap = { oneDark, dracula, materialDark, atomDark };
 
 const CodeBlock = ({ language, value, onOpenArtifact }) => {
   const [copied, setCopied] = useState(false);
+  const { activeThemeId } = useCodeTheme(); // Get preferred theme
 
   const handleCopy = () => {
     navigator.clipboard.writeText(value);
@@ -13,9 +18,8 @@ const CodeBlock = ({ language, value, onOpenArtifact }) => {
   };
 
   return (
-    <div className="relative group rounded-lg overflow-hidden my-4 border border-slate-700 bg-[#282c34] shadow-md">
-      {/* Mac-style Header */}
-      <div className="flex justify-between items-center px-4 py-2 bg-[#1e222a] border-b border-slate-700/50 text-xs text-slate-400 select-none">
+    <div className="relative group rounded-lg overflow-hidden my-4 border border-slate-700 shadow-md bg-[#1e1e1e]">
+      <div className="flex justify-between items-center px-4 py-2 bg-slate-900 border-b border-black/50 text-xs text-slate-400 select-none">
         <div className="flex gap-1.5">
            <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 group-hover:bg-red-500/80 transition-colors"></div>
            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 group-hover:bg-yellow-500/80 transition-colors"></div>
@@ -24,7 +28,6 @@ const CodeBlock = ({ language, value, onOpenArtifact }) => {
         </div>
         
         <div className="flex items-center gap-3">
-           {/* Open Editor Button */}
            {onOpenArtifact && (
              <button 
                onClick={() => onOpenArtifact(value, language)}
@@ -36,10 +39,7 @@ const CodeBlock = ({ language, value, onOpenArtifact }) => {
              </button>
            )}
 
-           <button 
-             onClick={handleCopy} 
-             className="flex items-center gap-1.5 hover:text-white transition-colors"
-           >
+           <button onClick={handleCopy} className="flex items-center gap-1.5 hover:text-white transition-colors">
              {copied ? <IoCheckmarkOutline size={14} className="text-green-400" /> : <IoCopyOutline size={14} />}
            </button>
         </div>
@@ -48,8 +48,8 @@ const CodeBlock = ({ language, value, onOpenArtifact }) => {
       <div className="overflow-x-auto custom-scrollbar">
         <SyntaxHighlighter
           language={language}
-          style={oneDark}
-          customStyle={{ margin: 0, padding: '1.5rem', fontSize: '0.9rem', lineHeight: '1.5' }}
+          style={themeMap[activeThemeId] || oneDark}
+          customStyle={{ margin: 0, padding: '1.5rem', fontSize: '0.9rem', lineHeight: '1.5', background: 'transparent' }}
           showLineNumbers={true}
           wrapLongLines={true}
         >
