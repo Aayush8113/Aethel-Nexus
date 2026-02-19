@@ -1,30 +1,26 @@
-import { IoSearch, IoClose } from "react-icons/io5"; // Added IoClose
-import { forwardRef } from "react"; // Added forwardRef
+import { forwardRef } from "react";
+import { IoSearch } from "react-icons/io5";
 
 const SearchBar = forwardRef(({ value, onChange }, ref) => {
   return (
-    <div className="relative px-2 mb-4 animate-fade-in group">
-      <IoSearch className="absolute transition-colors -translate-y-1/2 left-5 top-1/2 text-slate-500 group-focus-within:text-indigo-400" />
-      <input 
-        ref={ref} // Attach Ref here
-        type="text" 
+    <div className="relative px-2 mb-4 group">
+      <div className="absolute inset-y-0 left-0 flex items-center pl-5 pointer-events-none">
+        <IoSearch className="text-slate-500 group-focus-within:text-indigo-400 transition-colors" size={16} />
+      </div>
+      <input
+        ref={ref}
+        type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Search history... (Press '/')"
-        className="w-full bg-slate-800 text-white pl-10 pr-8 py-2.5 rounded-xl text-sm border border-transparent focus:border-indigo-500/50 focus:bg-slate-700 outline-none transition-all placeholder-slate-500 shadow-inner"
+        className="w-full bg-slate-950/50 text-white text-sm rounded-xl pl-10 pr-12 py-2.5 border border-slate-800 focus:border-indigo-500/50 focus:bg-slate-900 outline-none transition-all shadow-inner placeholder-slate-600"
+        placeholder="Search..."
       />
-      
-      {/* Clear Button */}
-      {value && (
-        <button 
-          onClick={() => onChange("")}
-          className="absolute -translate-y-1/2 right-4 top-1/2 text-slate-500 hover:text-white"
-        >
-          <IoClose />
-        </button>
-      )}
+      <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+        <span className="text-[10px] text-slate-500 font-mono border border-slate-700 bg-slate-800 px-1.5 py-0.5 rounded opacity-70">⌘K</span>
+      </div>
     </div>
   );
 });
 
+SearchBar.displayName = "SearchBar";
 export default SearchBar;
