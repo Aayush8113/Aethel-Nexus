@@ -2,15 +2,15 @@ import { useRef, useEffect, useState } from "react";
 import { IoCloseCircleOutline, IoImageOutline, IoSend } from "react-icons/io5";
 import ImagePreview from "./ImagePreview";
 import VoiceInput from "./VoiceInput";
-import PromptMenu from "./PromptMenu"; // New
-import { PROMPTS } from "../data/prompts"; // New
-import { estimateTokens } from "../utils/tokenUtils"; // New
+import PromptMenu from "./PromptMenu";
+import { PROMPTS } from "../data/prompts";
+import { estimateTokens } from "../utils/tokenUtils";
+import { getCharCount, getWordCount } from "../utils/textStats"; // New
 
 const MessageInput = ({ input, setInput, isListening, startListening, isLoading, handleSend, isSpeaking, stopSpeaking, image, setImage }) => {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   
-  // Prompt State
   const [showPrompts, setShowPrompts] = useState(false);
   const [filteredPrompts, setFilteredPrompts] = useState([]);
   const [promptIndex, setPromptIndex] = useState(0);
@@ -21,7 +21,6 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
       textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
     }
 
-    // Slash Command Logic
     if (input.startsWith("/")) {
       const query = input.toLowerCase();
       const matches = PROMPTS.filter(p => p.label.startsWith(query));
@@ -41,18 +40,10 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
 
   const handleKeyDown = (e) => {
     if (showPrompts) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setPromptIndex(prev => (prev + 1) % filteredPrompts.length);
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setPromptIndex(prev => (prev - 1 + filteredPrompts.length) % filteredPrompts.length);
-      } else if (e.key === "Enter" || e.key === "Tab") {
-        e.preventDefault();
-        handlePromptSelect(filteredPrompts[promptIndex]);
-      } else if (e.key === "Escape") {
-        setShowPrompts(false);
-      }
+      if (e.key === "ArrowDown") { e.preventDefault(); setPromptIndex(prev => (prev + 1) % filteredPrompts.length); } 
+      else if (e.key === "ArrowUp") { e.preventDefault(); setPromptIndex(prev => (prev - 1 + filteredPrompts.length) % filteredPrompts.length); } 
+      else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); handlePromptSelect(filteredPrompts[promptIndex]); } 
+      else if (e.key === "Escape") { setShowPrompts(false); }
       return;
     }
 
@@ -62,19 +53,11 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
     }
   };
 
-  const handleFileSelect = (e) => {
-    if (e.target.files && e.target.files[0]) setImage(e.target.files[0]);
-  };
+  const handleFileSelect = (e) => { if (e.target.files && e.target.files[0]) setImage(e.target.files[0]); };
 
   return (
     <div className="relative max-w-4xl mx-auto w-full">
-      {/* Prompt Menu Popup */}
-      <PromptMenu 
-        isOpen={showPrompts} 
-        filteredPrompts={filteredPrompts} 
-        activeIndex={promptIndex} 
-        onSelect={handlePromptSelect} 
-      />
+      <PromptMenu isOpen={showPrompts} filteredPrompts={filteredPrompts} activeIndex={promptIndex} onSelect={handlePromptSelect} />
 
       <form onSubmit={handleSend} className="relative group gap-2 bg-slate-900 p-2 rounded-xl border border-slate-800 shadow-xl flex flex-col z-20">
         
@@ -84,11 +67,7 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
           </button>
         )}
 
-        {image && (
-          <div className="px-2 pt-2">
-            <ImagePreview file={image} onRemove={() => setImage(null)} />
-          </div>
-        )}
+        {image && (<div className="px-2 pt-2"><ImagePreview file={image} onRemove={() => setImage(null)} /></div>)}
 
         <div className="flex items-end gap-2 w-full">
           <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*" className="hidden" />
@@ -96,18 +75,12 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
             <IoImageOutline size={22} />
           </button>
 
-          <div className="flex-shrink-0 mb-1">
-             <VoiceInput isListening={isListening} onToggle={startListening} />
-          </div>
+          <div className="flex-shrink-0 mb-1"><VoiceInput isListening={isListening} onToggle={startListening} /></div>
 
           <div className="relative flex-1">
             <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={isListening ? "Listening..." : "Type '/' for prompts..."}
-              rows={1}
+              ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown}
+              placeholder={isListening ? "Listening..." : "Type '/' for prompts..."} rows={1}
               className={`w-full bg-transparent text-white pl-2 pr-10 py-3 resize-none outline-none max-h-48 overflow-y-auto text-sm md:text-base ${isListening ? "placeholder-red-400" : "placeholder-slate-500"}`}
               disabled={isLoading}
             />
@@ -125,12 +98,13 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
         </div>
       </form>
       
-      {/* Token Counter */}
-      <div className="absolute -bottom-6 right-2 text-[10px] text-slate-600 font-mono transition-opacity opacity-0 group-hover:opacity-100 select-none">
-        {estimateTokens(input)} tokens
+      {/* Enhanced Stats Counter */}
+      <div className="absolute -bottom-6 right-2 text-[10px] text-slate-500 font-mono transition-opacity opacity-0 group-hover:opacity-100 select-none flex gap-3">
+        <span>{getCharCount(input)} chars</span>
+        <span>{getWordCount(input)} words</span>
+        <span className="text-indigo-400">{estimateTokens(input)} tokens</span>
       </div>
     </div>
   );
 };
-
 export default MessageInput;
