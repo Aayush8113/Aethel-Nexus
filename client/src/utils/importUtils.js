@@ -12,6 +12,7 @@ export const importChatFromJSON = (file) => {
         reject(err);
       }
     };
+    
     reader.onerror = (err) => reject(err);
     reader.readAsText(file);
   });
