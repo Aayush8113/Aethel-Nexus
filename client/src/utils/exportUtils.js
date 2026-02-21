@@ -1,31 +1,36 @@
-// Helper to get date string
-const getDateString = () => new Date().toISOString().split('T')[0];
-
 export const downloadChatAsMarkdown = (title, messages) => {
-  const content = messages.map(msg => {
-    return `### ${msg.role === "user" ? "User" : "Aethel"}\n\n${msg.content}\n`;
-  }).join("\n---\n\n");
+  let content = `# Aethel-Nexus Chat Export\n\n`;
+  content += `**Export Date:** ${new Date().toLocaleString()}\n\n---\n\n`;
 
-  const blob = new Blob([`# ${title}\n\n${content}`], { type: "text/markdown" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  // UPDATED LINE:
-  a.download = `Aethel_Chat_${getDateString()}.md`; 
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  messages.forEach((msg) => {
+    content += `### ${msg.role === 'user' ? 'User' : 'Aethel'}\n`;
+    content += `${msg.content}\n\n`;
+    if (msg.image) {
+      content += `*[Image Attached]*\n\n`;
+    }
+  });
+
+  const element = document.createElement("a");
+  const file = new Blob([content], { type: "text/markdown" });
+  element.href = URL.createObjectURL(file);
+  element.download = `${title.replace(/\s+/g, '_')}_${Date.now()}.md`;
+  document.body.appendChild(element);
+  element.click();
+  document.body.removeChild(element);
 };
 
 export const downloadChatAsJSON = (title, messages) => {
-  const data = JSON.stringify({ title, messages, exportedAt: new Date() }, null, 2);
-  const blob = new Blob([data], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  // UPDATED LINE:
-  a.download = `Aethel_Chat_${getDateString()}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  const exportData = {
+    app: "Aethel-Nexus",
+    exportDate: new Date().toISOString(),
+    messages: messages
+  };
+
+  const element = document.createElement("a");
+  const file = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+  element.href = URL.createObjectURL(file);
+  element.download = `${title.replace(/\s+/g, '_')}_${Date.now()}.json`;
+  document.body.appendChild(element);
+  element.click();
+  document.body.removeChild(element);
 };
