@@ -2,30 +2,35 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <meta name="theme-color" content="#020617" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Aethel Nexus | Advance Coding AI</title>
-    <meta name="title" content="Aethel Nexus | Advanced AI Coding Assistant">
-    <meta name="description" content="A high-performance AI chat platform powered by Gemini 3 Pro. Features real-time code generation, syntax highlighting, and smart history context.">
-    <meta name="keywords" content="AI chatbot, Gemini Pro, React AI, Coding Assistant, MERN Stack, Artificial Intelligence, Developer Tools">
+    
+    <title>Aethel Nexus | Advanced AI Chatbot & Coding Assistant</title>
+    <meta name="title" content="Aethel Nexus | ML-Powered AI Chatbot & Dev Assistant">
+    <meta name="description" content="Aethel Nexus is an advanced real chatbot and AI/ML coding assistant. Built for Senior Full Stack Developers to generate, debug, scale code, and manage architecture in real-time.">
+    <meta name="keywords" content="AI chatbot, Machine Learning, Senior Full Stack Developer, Real Chatbot, React, Node.js, AI Coding Assistant, Gemini Pro, Aethel Nexus, AI Architecture">
     <meta name="author" content="Aethel Nexus Team">
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    
+    <link rel="canonical" href="https://aethelnexus.app/" />
 
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/logo.svg"> <meta name="theme-color" content="#020617" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo.svg">
 
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://aethelnexus.app/">
-    <meta property="og:title" content="Aethel Nexus | Advanced AI Coding Assistant">
-    <meta property="og:description" content="Experience the next generation of AI chat. Powered by Gemini 3 Pro for instant code solutions.">
-    <meta property="og:image" content="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png"> <meta property="twitter:card" content="summary_large_image">
+    <meta property="og:title" content="Aethel Nexus | Advanced AI Chatbot & Coding Assistant">
+    <meta property="og:description" content="An advanced real chatbot and AI/ML assistant designed for Senior Full Stack Developers. Debug and scale your codebase instantly.">
+    <meta property="og:image" content="https://aethelnexus.app/logo.svg"> 
+
+    <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://aethelnexus.app/">
-    <meta property="twitter:title" content="Aethel Nexus | AI for Developers">
-    <meta property="twitter:description" content="Experience the next generation of AI chat. Powered by Gemini 3 Pro for instant code solutions.">
-    <meta property="twitter:image" content="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png">
+    <meta property="twitter:title" content="Aethel Nexus | AI for Senior Developers">
+    <meta property="twitter:description" content="An advanced real chatbot and AI/ML assistant designed for Senior Full Stack Developers. Debug and scale your codebase instantly.">
+    <meta property="twitter:image" content="https://aethelnexus.app/logo.svg">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,11 +38,18 @@
 
     <style>
       body {
-        font-family: 'Inter', sans-serif;
-        background-color: #020617;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: #020617; /* Slate 950 */
+        color: #ffffff;
         margin: 0;
         padding: 0;
         -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden;
+      }
+      #root {
+        height: 100vh;
+        width: 100vw;
       }
     </style>
   </head>
@@ -45,6 +57,11 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript>
+      <div style="display:flex; justify-content:center; align-items:center; height:100vh; flex-direction:column; text-align:center;">
+        <h2>JavaScript Required</h2>
+        <p>You need to enable JavaScript to run the Aethel Nexus AI environment.</p>
+      </div>
+    </noscript>
   </body>
 </html>
