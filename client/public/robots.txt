@@ -1,5 +1,13 @@
+# https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Allow: /
 
+# Prevent crawling of specific system/API paths if exposed
+Disallow: /api/
+Disallow: /admin/
+Disallow: /private/
+Disallow: /*?search=
+
+# Sitemaps and Host
 Sitemap: https://aethelnexus.app/sitemap.xml
 Host: https://aethelnexus.app
