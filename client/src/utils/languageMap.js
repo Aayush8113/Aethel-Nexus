@@ -1,24 +1,21 @@
-export const getExtension = (lang) => {
+export const getExtension = (language) => {
   const map = {
-    javascript: "js",
-    js: "js",
-    jsx: "jsx",
-    typescript: "ts",
-    ts: "ts",
-    tsx: "tsx",
-    python: "py",
-    py: "py",
-    html: "html",
-    css: "css",
-    java: "java",
-    cpp: "cpp",
-    c: "c",
-    csharp: "cs",
-    json: "json",
-    markdown: "md",
-    sql: "sql",
-    bash: "sh",
-    shell: "sh"
+    javascript: 'js',
+    python: 'py',
+    java: 'java',
+    'c++': 'cpp',
+    cpp: 'cpp',
+    csharp: 'cs',
+    html: 'html',
+    css: 'css',
+    json: 'json',
+    markdown: 'md',
+    typescript: 'ts',
+    tsx: 'tsx',
+    jsx: 'jsx',
+    sql: 'sql',
+    bash: 'sh',
+    shell: 'sh'
   };
-  return map[lang.toLowerCase()] || "txt";
+  return map[language?.toLowerCase()] || 'txt';
 };
