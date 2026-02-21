@@ -5,7 +5,7 @@ export const useTouchSwipe = ({ onSwipeLeft, onSwipeRight, threshold = 50 }) => 
   const [touchEnd, setTouchEnd] = useState(null);
 
   const onTouchStart = (e) => {
-    setTouchEnd(null); // Reset
+    setTouchEnd(null); 
     setTouchStart(e.targetTouches[0].clientX);
   };
 
