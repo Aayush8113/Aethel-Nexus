@@ -1,4 +1,3 @@
-// Gemini 2.0 Flash context window is huge, but let's visualize a "safe" active memory chunk.
 export const MAX_CONTEXT_TOKENS = 32000; 
 
 export const estimateTokens = (text) => {
