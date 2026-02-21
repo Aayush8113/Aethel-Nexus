@@ -4,5 +4,5 @@ export const getCharCount = (text) => {
 
 export const getWordCount = (text) => {
   if (!text) return 0;
-  return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+  return text.trim().split(/\s+/).filter(word => word.length > 0).length
 };
