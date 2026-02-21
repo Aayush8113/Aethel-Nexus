@@ -10,7 +10,7 @@ export const usePing = () => {
         await fetch('/', { method: 'HEAD', cache: 'no-cache' });
         setPing(Date.now() - start);
       } catch (e) {
-        setPing(-1); // Offline
+        setPing(-1); 
       }
     };
 
