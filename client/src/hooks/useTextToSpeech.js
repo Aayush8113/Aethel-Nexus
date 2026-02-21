@@ -11,9 +11,12 @@ export const useTextToSpeech = () => {
       const available = window.speechSynthesis.getVoices();
       setVoices(available);
       
-      // Prefer a natural sounding "Google" or "Microsoft" voice
-      const preferred = available.find(v => v.name.includes("Google US English") || v.name.includes("Zira"));
-      setActiveVoice(preferred || available[0]);
+      if (available.length > 0) {
+        // Prefer a natural sounding "Google" or "Microsoft" voice initially
+        const preferred = available.find(v => v.name.includes("Google US English") || v.name.includes("Zira"));
+        // Only set the default if one isn't already selected by the user
+        setActiveVoice(prev => prev || preferred || available[0]);
+      }
     };
 
     loadVoices();
@@ -21,19 +24,32 @@ export const useTextToSpeech = () => {
   }, []);
 
   const speak = useCallback((text) => {
-    if (!activeVoice) return;
+    if (!activeVoice || !text) return;
 
     // Stop any current speech
     window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
+    // Clean up Markdown symbols so the AI doesn't read "asterisk asterisk"
+    const cleanText = text
+      .replace(/[*_~`#]/g, "") // Remove markdown formatting characters
+      .replace(/```[\s\S]*?```/g, "Code block omitted.") // Skip reading long code blocks
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    
+    // CRITICAL FIX: Set BOTH the voice and the language property
     utterance.voice = activeVoice;
+    utterance.lang = activeVoice.lang; // <--- This forces the correct native language engine!
+    
     utterance.rate = 1; // Normal speed
     utterance.pitch = 1; // Normal pitch
 
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+    utterance.onerror = (e) => {
+      console.error("Speech Synthesis Error:", e);
+      setIsSpeaking(false);
+    };
 
     window.speechSynthesis.speak(utterance);
   }, [activeVoice]);
