@@ -48,7 +48,7 @@ const ArtifactPanel = ({ isOpen, onClose, code, language, onChange }) => {
           <button onClick={handleCopy} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" title="Copy Code"><IoCopyOutline size={18} /></button>
           <button onClick={handleDownload} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" title="Download"><IoDownloadOutline size={18} /></button>
           <div className="w-px h-6 bg-slate-700 mx-1"></div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Close"><IoClose size={20} /></button>
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Close Artifact"><IoClose size={20} /></button>
         </div>
       </div>
       <div className="flex-1 overflow-hidden relative">
