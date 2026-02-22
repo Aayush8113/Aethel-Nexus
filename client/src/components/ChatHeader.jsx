@@ -12,7 +12,7 @@ const ChatHeader = ({ currentPersona, onExportMarkdown, onExportJSON, onCopyAll,
       <div className="pointer-events-auto flex items-center gap-3">
          <PersonaBadge persona={currentPersona} />
          {hasCustomPrompt && (
-            <div className="flex items-center gap-1 text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full border border-amber-500/20 shadow-sm" title="Custom System Prompt Active">
+            <div className="flex items-center gap-1 text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full border border-amber-500/20 shadow-sm backdrop-blur" title="Custom System Prompt Active">
                <IoWarningOutline size={12} /> <span className="hidden sm:inline">Custom Rule</span>
             </div>
          )}
@@ -23,7 +23,13 @@ const ChatHeader = ({ currentPersona, onExportMarkdown, onExportJSON, onCopyAll,
           <button onClick={() => setIsMenuOpen(!isMenuOpen)} className={`p-2 backdrop-blur-md border rounded-full transition-all shadow-lg ${isMenuOpen ? "bg-slate-800 text-white border-slate-600" : "bg-slate-900/80 text-slate-400 border-slate-700 hover:text-white hover:bg-slate-800"}`}>
             <IoEllipsisVertical size={20} />
           </button>
-          <ExportMenu isOpen={isMenuOpen} onExportMarkdown={() => { onExportMarkdown(); setIsMenuOpen(false); }} onExportJSON={() => { onExportJSON(); setIsMenuOpen(false); }} onCopyAll={() => { onCopyAll(); setIsMenuOpen(false); }} onImportJSON={(file) => { onImportJSON(file); setIsMenuOpen(false); }} />
+          <ExportMenu 
+            isOpen={isMenuOpen} 
+            onExportMarkdown={() => { onExportMarkdown(); setIsMenuOpen(false); }} 
+            onExportJSON={() => { onExportJSON(); setIsMenuOpen(false); }} 
+            onCopyAll={() => { onCopyAll(); setIsMenuOpen(false); }} 
+            onImportJSON={(file) => { onImportJSON(file); setIsMenuOpen(false); }} 
+          />
           {isMenuOpen && <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsMenuOpen(false)} />}
         </div>
       </div>
