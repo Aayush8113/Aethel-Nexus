@@ -3,6 +3,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark, dracula, materialDark, atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useState } from "react";
 import { useCodeTheme } from "../hooks/useCodeTheme";
+import { useCodeSettings } from "../hooks/useCodeSettings"; // New
 
 const themeMap = { oneDark, dracula, materialDark, atomDark };
 
@@ -10,6 +11,7 @@ const CodeBlock = ({ language, value, onOpenArtifact }) => {
   const [copied, setCopied] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false); 
   const { activeThemeId } = useCodeTheme(); 
+  const { showLineNumbers, wordWrap } = useCodeSettings(); // New
 
   const lineCount = value.split('\n').length;
   const isLongCode = lineCount > 15;
@@ -36,11 +38,11 @@ const CodeBlock = ({ language, value, onOpenArtifact }) => {
         </div>
         <div className="flex items-center gap-3">
            {onOpenArtifact && (
-             <button onClick={() => onOpenArtifact(value, language)} className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 transition-colors opacity-0 group-hover:opacity-100" title="Open in Full Screen Editor">
+             <button onClick={() => onOpenArtifact(value, language)} className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 transition-colors opacity-0 group-hover:opacity-100" title="Open in Editor">
                <IoResize size={14} /><span className="hidden sm:inline text-[10px]">Open Editor</span>
              </button>
            )}
-           <button onClick={handleCopy} className="flex items-center gap-1.5 hover:text-white transition-colors" title="Copy to Clipboard">
+           <button onClick={handleCopy} className="flex items-center gap-1.5 hover:text-white transition-colors">
              {copied ? <IoCheckmarkOutline size={14} className="text-green-400" /> : <IoCopyOutline size={14} />}
            </button>
         </div>
@@ -51,8 +53,9 @@ const CodeBlock = ({ language, value, onOpenArtifact }) => {
           language={language} 
           style={themeMap[activeThemeId] || oneDark}
           customStyle={{ margin: 0, padding: '1.5rem', fontSize: '0.9rem', lineHeight: '1.5', background: 'transparent' }}
-          showLineNumbers={true} 
-          wrapLongLines={true}
+          showLineNumbers={showLineNumbers} 
+          wrapLines={wordWrap}
+          wrapLongLines={wordWrap}
         >
           {value}
         </SyntaxHighlighter>
