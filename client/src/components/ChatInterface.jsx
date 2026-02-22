@@ -16,11 +16,13 @@ import ContextBar from "./ContextBar";
 import Lightbox from "./Lightbox"; 
 import StopButton from "./StopButton"; 
 import ScrollFab from "./ScrollFab"; 
+import DragOverlay from "./DragOverlay"; // Day 22
 
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { downloadChatAsMarkdown, downloadChatAsJSON } from "../utils/exportUtils";
 import { importChatFromJSON } from "../utils/importUtils"; 
+import { useDragDrop } from "../hooks/useDragDrop"; // Day 22
 
 const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus }) => {
   const [messages, setMessages] = useState([]);
@@ -39,6 +41,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
   const { error: notifyError, success } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
+  const { isDragging, droppedFile, clearDroppedFile } = useDragDrop(); // Day 22
   
   const messagesEndRef = useRef(null);
   const containerRef = useRef(null); 
@@ -48,6 +51,15 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const finalSystemInstruction = customPrompt 
     ? `${systemInstruction}\n\nUSER OVERRIDE RULES:\n${customPrompt}` 
     : systemInstruction;
+
+  // Handle Drag and Drop
+  useEffect(() => {
+    if (droppedFile) {
+      setImage(droppedFile);
+      clearDroppedFile();
+      success("Image attached!");
+    }
+  }, [droppedFile, clearDroppedFile, success]);
 
   useEffect(() => {
     if (isAutoRead && !isLoading && messages.length > 0) {
@@ -144,6 +156,9 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
   return (
     <div className={`flex flex-col h-full bg-slate-950 text-slate-100 relative w-full chat-container ${focusedMsgId !== null ? 'has-focus' : ''}`}>
+      
+      <DragOverlay isDragging={isDragging} /> 
+
       <ChatHeader currentPersona={currentPersona} onExportMarkdown={handleExportMarkdown} onExportJSON={handleExportJSON} onCopyAll={handleCopyAll} onImportJSON={handleImportJSON} isFocusMode={isFocusMode} onToggleFocus={onToggleFocus} hasCustomPrompt={!!customPrompt} />
       
       {!isFocusMode && (<div className="relative w-full z-10 transition-all duration-500"><ContextBar messages={messages} /></div>)}
