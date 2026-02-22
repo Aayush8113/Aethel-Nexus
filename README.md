@@ -93,3 +93,7 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 * **Command Palette:** Press `Cmd+K` or `Ctrl+K` for global navigation.
 * **Themes:** Selectable code syntax themes in Settings.
 * **Navigation:** Smart Scroll-to-Top and Bottom buttons for long chats.
+
+* **Drag & Drop:** Attach images by dropping them anywhere on the screen.
+* **Audio Tuning:** Adjust AI reading speed and pitch via preferences.
+* **Code Formatting:** Global settings for code word-wrap and line numbers.
