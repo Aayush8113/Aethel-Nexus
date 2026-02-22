@@ -1,15 +1,18 @@
-import { IoCopyOutline, IoCheckmarkOutline, IoResize } from "react-icons/io5";
+import { IoCopyOutline, IoCheckmarkOutline, IoResize, IoChevronDown, IoChevronUp } from "react-icons/io5";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark, dracula, materialDark, atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useState } from "react";
 import { useCodeTheme } from "../hooks/useCodeTheme";
 
-// Map IDs to actual styles
 const themeMap = { oneDark, dracula, materialDark, atomDark };
 
 const CodeBlock = ({ language, value, onOpenArtifact }) => {
   const [copied, setCopied] = useState(false);
-  const { activeThemeId } = useCodeTheme(); // Get preferred theme
+  const [isCollapsed, setIsCollapsed] = useState(false); 
+  const { activeThemeId } = useCodeTheme(); 
+
+  const lineCount = value.split('\n').length;
+  const isLongCode = lineCount > 15;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(value);
@@ -19,45 +22,43 @@ const CodeBlock = ({ language, value, onOpenArtifact }) => {
 
   return (
     <div className="relative group rounded-lg overflow-hidden my-4 border border-slate-700 shadow-md bg-[#1e1e1e]">
-      <div className="flex justify-between items-center px-4 py-2 bg-slate-900 border-b border-black/50 text-xs text-slate-400 select-none">
-        <div className="flex gap-1.5">
+      <div className="flex justify-between items-center px-4 py-2 bg-[#1e222a] border-b border-black/50 text-xs text-slate-400 select-none">
+        <div className="flex gap-1.5 items-center">
            <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 group-hover:bg-red-500/80 transition-colors"></div>
            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 group-hover:bg-yellow-500/80 transition-colors"></div>
            <div className="w-2.5 h-2.5 rounded-full bg-green-500/20 group-hover:bg-green-500/80 transition-colors"></div>
            <span className="ml-2 font-mono text-slate-500 uppercase opacity-50">{language}</span>
+           {isLongCode && (
+              <button onClick={() => setIsCollapsed(!isCollapsed)} className="ml-3 flex items-center gap-1 hover:text-white transition-colors">
+                 {isCollapsed ? <><IoChevronDown/> Expand</> : <><IoChevronUp/> Collapse</>}
+              </button>
+           )}
         </div>
-        
         <div className="flex items-center gap-3">
            {onOpenArtifact && (
-             <button 
-               onClick={() => onOpenArtifact(value, language)}
-               className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 transition-colors opacity-0 group-hover:opacity-100"
-               title="Open in Full Screen Editor"
-             >
-               <IoResize size={14} />
-               <span className="hidden sm:inline text-[10px]">Open Editor</span>
+             <button onClick={() => onOpenArtifact(value, language)} className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 transition-colors opacity-0 group-hover:opacity-100" title="Open in Full Screen Editor">
+               <IoResize size={14} /><span className="hidden sm:inline text-[10px]">Open Editor</span>
              </button>
            )}
-
-           <button onClick={handleCopy} className="flex items-center gap-1.5 hover:text-white transition-colors">
+           <button onClick={handleCopy} className="flex items-center gap-1.5 hover:text-white transition-colors" title="Copy to Clipboard">
              {copied ? <IoCheckmarkOutline size={14} className="text-green-400" /> : <IoCopyOutline size={14} />}
            </button>
         </div>
       </div>
       
-      <div className="overflow-x-auto custom-scrollbar">
+      <div className={`overflow-x-auto custom-scrollbar transition-all duration-300 ${isCollapsed ? 'max-h-32' : ''}`}>
         <SyntaxHighlighter
-          language={language}
+          language={language} 
           style={themeMap[activeThemeId] || oneDark}
           customStyle={{ margin: 0, padding: '1.5rem', fontSize: '0.9rem', lineHeight: '1.5', background: 'transparent' }}
-          showLineNumbers={true}
+          showLineNumbers={true} 
           wrapLongLines={true}
         >
           {value}
         </SyntaxHighlighter>
       </div>
+      {isCollapsed && (<div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#1e1e1e] to-transparent pointer-events-none"></div>)}
     </div>
   );
 };
-
 export default CodeBlock;
