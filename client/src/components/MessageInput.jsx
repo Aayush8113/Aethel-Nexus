@@ -5,7 +5,7 @@ import VoiceInput from "./VoiceInput";
 import PromptMenu from "./PromptMenu";
 import { PROMPTS } from "../data/prompts";
 import { estimateTokens } from "../utils/tokenUtils";
-import { getCharCount, getWordCount } from "../utils/textStats"; // New
+import { getCharCount, getWordCount } from "../utils/textStats";
 
 const MessageInput = ({ input, setInput, isListening, startListening, isLoading, handleSend, isSpeaking, stopSpeaking, image, setImage }) => {
   const textareaRef = useRef(null);
@@ -80,8 +80,8 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
           <div className="relative flex-1">
             <textarea
               ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown}
-              placeholder={isListening ? "Listening..." : "Type '/' for prompts..."} rows={1}
-              className={`w-full bg-transparent text-white pl-2 pr-10 py-3 resize-none outline-none max-h-48 overflow-y-auto text-sm md:text-base ${isListening ? "placeholder-red-400" : "placeholder-slate-500"}`}
+              placeholder={isListening ? "Listening..." : "Type '/' for commands..."} rows={1}
+              className={`w-full bg-transparent text-white pl-2 pr-10 py-3 resize-none outline-none max-h-48 overflow-y-auto text-sm md:text-base custom-scrollbar ${isListening ? "placeholder-red-400" : "placeholder-slate-500"}`}
               disabled={isLoading}
             />
           </div>
