@@ -37,7 +37,7 @@ function App() {
   
   const [isAutoRead, setIsAutoRead] = useLocalStorage("aethel_autoread", false);
   const [currentPersona, setCurrentPersona] = useLocalStorage("aethel_persona", PERSONAS[0]);
-  const [customPrompt, setCustomPrompt] = useLocalStorage("aethel_custom_prompt", ""); // New
+  const [customPrompt, setCustomPrompt] = useLocalStorage("aethel_custom_prompt", ""); 
   
   const isOnline = useOnlineStatus();
   const { success } = useNotify();
@@ -89,7 +89,7 @@ function App() {
   useEffect(() => { loadChats(); }, [activeChatId]);
 
   return (
-    <div className="flex h-screen bg-black text-white overflow-hidden flex-col">
+    <div className="flex h-screen bg-black text-white overflow-hidden flex-col font-sans">
       <Toaster position="top-center" />
       {!isOnline && <OfflineBanner />}
 
