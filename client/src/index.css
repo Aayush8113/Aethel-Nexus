@@ -231,3 +231,8 @@ textarea:focus {
   transform: scale(1.02);
   transition: all 0.3s ease;
 }
+
+/* Prevent child elements from stealing drag events */
+.pointer-events-none-children * {
+  pointer-events: none;
+}
