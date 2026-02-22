@@ -41,7 +41,7 @@ function App() {
   
   const isOnline = useOnlineStatus();
   const { success } = useNotify();
-  const { voices, activeVoice, setActiveVoice, speak, stop, isSpeaking } = useTextToSpeech();
+  const { voices, activeVoice, setActiveVoice, speak, stop, isSpeaking, rate, setRate, pitch, setPitch } = useTextToSpeech(); // Updated hooks
   const { isVisible: isArtifactOpen, activeCode, activeLanguage, openArtifact, closeArtifact, setActiveCode } = useArtifact();
   const { isInstallable, installApp } = usePWA(); 
   const { isPaletteOpen, closePalette, openPalette } = useCommandPalette(); 
@@ -93,14 +93,16 @@ function App() {
       <Toaster position="top-center" />
       {!isOnline && <OfflineBanner />}
 
-      <CommandPalette 
-        isOpen={isPaletteOpen} onClose={closePalette} chats={chats} onSelectChat={setActiveChatId}
-        onNewChat={() => { setActiveChatId(null); success("New conversation"); }}
-        onOpenSettings={() => setIsSettingsOpen(true)} onToggleFocus={() => setIsFocusMode(!isFocusMode)}
-      />
+      <CommandPalette isOpen={isPaletteOpen} onClose={closePalette} chats={chats} onSelectChat={setActiveChatId} onNewChat={() => { setActiveChatId(null); success("New conversation"); }} onOpenSettings={() => setIsSettingsOpen(true)} onToggleFocus={() => setIsFocusMode(!isFocusMode)} />
 
       <Suspense fallback={null}>
-        <VoiceSettings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} voices={voices} activeVoice={activeVoice} onVoiceChange={setActiveVoice} isAutoRead={isAutoRead} onToggleAutoRead={() => setIsAutoRead(!isAutoRead)} customPrompt={customPrompt} setCustomPrompt={setCustomPrompt} />
+        <VoiceSettings 
+          isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} 
+          voices={voices} activeVoice={activeVoice} onVoiceChange={setActiveVoice} 
+          isAutoRead={isAutoRead} onToggleAutoRead={() => setIsAutoRead(!isAutoRead)} 
+          customPrompt={customPrompt} setCustomPrompt={setCustomPrompt}
+          ttsRate={rate} setTtsRate={setRate} ttsPitch={pitch} setTtsPitch={setPitch} // Pass new props
+        />
         <PersonaModal isOpen={isPersonaOpen} onClose={() => setIsPersonaOpen(false)} currentPersona={currentPersona} onSelect={setCurrentPersona} />
         <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
       </Suspense>
