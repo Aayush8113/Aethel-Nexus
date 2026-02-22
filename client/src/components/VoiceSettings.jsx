@@ -36,13 +36,13 @@ const VoiceSettings = ({ isOpen, onClose, voices, activeVoice, onVoiceChange, is
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">AI Voice Model</label>
-              <select value={activeVoice?.name || ""} onChange={(e) => onVoiceChange(voices.find(v => v.name === e.target.value))} className="w-full bg-slate-800 text-white p-3 rounded-xl border border-slate-700 focus:border-indigo-500 outline-none text-sm appearance-none">
+              <select value={activeVoice?.name || ""} onChange={(e) => onVoiceChange(voices.find(v => v.name === e.target.value))} className="w-full bg-slate-800 text-white p-3 rounded-xl border border-slate-700 focus:border-indigo-500 outline-none text-sm appearance-none cursor-pointer">
                 {voices.map((voice) => (<option key={voice.name} value={voice.name}>{voice.name} ({voice.lang})</option>))}
               </select>
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Code Syntax Theme</label>
-              <select value={activeThemeId} onChange={(e) => setActiveThemeId(e.target.value)} className="w-full bg-slate-800 text-white p-3 rounded-xl border border-slate-700 focus:border-indigo-500 outline-none text-sm appearance-none">
+              <select value={activeThemeId} onChange={(e) => setActiveThemeId(e.target.value)} className="w-full bg-slate-800 text-white p-3 rounded-xl border border-slate-700 focus:border-indigo-500 outline-none text-sm appearance-none cursor-pointer">
                 {themes.map((theme) => (<option key={theme.id} value={theme.id}>{theme.name}</option>))}
               </select>
             </div>
@@ -54,17 +54,17 @@ const VoiceSettings = ({ isOpen, onClose, voices, activeVoice, onVoiceChange, is
                    Custom System Prompt Override
                 </label>
                 <p className="text-[10px] text-slate-400 leading-tight mb-2">
-                  This text will be appended to your active Persona's instructions. Use this to enforce specific output formats.
+                  This text will be appended to your active Persona's instructions. Use this to enforce specific output formats or languages.
                 </p>
                 <textarea
                   value={customPrompt}
                   onChange={(e) => setCustomPrompt(e.target.value)}
                   placeholder="e.g. Always write comments for every line of code..."
-                  className="w-full bg-slate-800 text-white p-3 rounded-xl border border-slate-700 focus:border-indigo-500 outline-none text-sm resize-none h-32"
+                  className="w-full bg-slate-800 text-white p-3 rounded-xl border border-slate-700 focus:border-indigo-500 outline-none text-sm resize-none h-32 custom-scrollbar"
                 />
              </div>
              {customPrompt && (
-                <button onClick={() => setCustomPrompt("")} className="text-xs text-red-400 hover:text-red-300">Clear Custom Prompt</button>
+                <button onClick={() => setCustomPrompt("")} className="text-xs text-red-400 hover:text-red-300 font-medium">Clear Custom Prompt</button>
              )}
           </div>
         )}
