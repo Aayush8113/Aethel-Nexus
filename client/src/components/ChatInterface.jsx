@@ -30,7 +30,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const [readingMsgId, setReadingMsgId] = useState(null);
   
   const [rawViewId, setRawViewId] = useState(null); 
-  const [focusedMsgId, setFocusedMsgId] = useState(null); // Reader Mode State
+  const [focusedMsgId, setFocusedMsgId] = useState(null); 
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [editingMsgId, setEditingMsgId] = useState(null);
@@ -45,7 +45,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
   const formatTime = (date) => new Date(date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  // Merge Persona rule + Custom rule
   const finalSystemInstruction = customPrompt 
     ? `${systemInstruction}\n\nUSER OVERRIDE RULES:\n${customPrompt}` 
     : systemInstruction;
@@ -79,7 +78,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     loadChat();
   }, [activeChatId, currentPersona]);
 
-  // Click outside to close Reader Mode
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (focusedMsgId !== null && !e.target.closest('.message-bubble')) setFocusedMsgId(null);
@@ -225,8 +223,8 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       </div>
 
       {isFocusMode && (
-         <div className="fixed bottom-0 left-0 right-0 p-6 z-40 flex justify-center bg-gradient-to-t from-black via-black/90 to-transparent pt-20 animate-fade-in-up">
-            <div className="w-full max-w-3xl"><ThemedInput /></div>
+         <div className="fixed bottom-0 left-0 right-0 p-6 z-40 flex justify-center bg-gradient-to-t from-black via-black/90 to-transparent pt-20 animate-fade-in-up pointer-events-none">
+            <div className="w-full max-w-3xl pointer-events-auto"><ThemedInput /></div>
          </div>
       )}
     </div>
