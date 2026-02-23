@@ -22,6 +22,7 @@ import { useArtifact } from "./hooks/useArtifact";
 import { usePWA } from "./hooks/usePWA"; 
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"; 
 import { useCommandPalette } from "./hooks/useCommandPalette"; 
+import { useCustomPersonas } from "./hooks/useCustomPersonas"; // Day 23
 import { PERSONAS } from "./data/personas";
 
 function App() {
@@ -41,10 +42,11 @@ function App() {
   
   const isOnline = useOnlineStatus();
   const { success } = useNotify();
-  const { voices, activeVoice, setActiveVoice, speak, stop, isSpeaking, rate, setRate, pitch, setPitch } = useTextToSpeech(); // Updated hooks
+  const { voices, activeVoice, setActiveVoice, speak, stop, isSpeaking, rate, setRate, pitch, setPitch } = useTextToSpeech(); 
   const { isVisible: isArtifactOpen, activeCode, activeLanguage, openArtifact, closeArtifact, setActiveCode } = useArtifact();
   const { isInstallable, installApp } = usePWA(); 
   const { isPaletteOpen, closePalette, openPalette } = useCommandPalette(); 
+  const { customPersonas, addPersona, deletePersona } = useCustomPersonas(); // Day 23
 
   useKeyboardShortcuts({
     "n": () => { setActiveChatId(null); success("New conversation"); },
@@ -101,9 +103,13 @@ function App() {
           voices={voices} activeVoice={activeVoice} onVoiceChange={setActiveVoice} 
           isAutoRead={isAutoRead} onToggleAutoRead={() => setIsAutoRead(!isAutoRead)} 
           customPrompt={customPrompt} setCustomPrompt={setCustomPrompt}
-          ttsRate={rate} setTtsRate={setRate} ttsPitch={pitch} setTtsPitch={setPitch} // Pass new props
+          ttsRate={rate} setTtsRate={setRate} ttsPitch={pitch} setTtsPitch={setPitch}
         />
-        <PersonaModal isOpen={isPersonaOpen} onClose={() => setIsPersonaOpen(false)} currentPersona={currentPersona} onSelect={setCurrentPersona} />
+        <PersonaModal 
+          isOpen={isPersonaOpen} onClose={() => setIsPersonaOpen(false)} 
+          currentPersona={currentPersona} onSelect={setCurrentPersona} 
+          customPersonas={customPersonas} onAddCustom={addPersona} onDeleteCustom={deletePersona} // Day 23
+        />
         <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
       </Suspense>
 
