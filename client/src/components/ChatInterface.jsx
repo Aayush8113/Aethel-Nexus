@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { sendMessageToAI, fetchChatById } from "../services/api";
 import { IoPerson, IoFlash, IoThumbsUpOutline, IoThumbsDownOutline, IoRefresh, IoPencil, IoCheckmark, IoClose, IoCopyOutline } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
@@ -16,13 +16,14 @@ import ContextBar from "./ContextBar";
 import Lightbox from "./Lightbox"; 
 import StopButton from "./StopButton"; 
 import ScrollFab from "./ScrollFab"; 
-import DragOverlay from "./DragOverlay"; // Day 22
+import DragOverlay from "./DragOverlay"; 
 
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { downloadChatAsMarkdown, downloadChatAsJSON } from "../utils/exportUtils";
 import { importChatFromJSON } from "../utils/importUtils"; 
-import { useDragDrop } from "../hooks/useDragDrop"; // Day 22
+import { useDragDrop } from "../hooks/useDragDrop"; 
+import { useSmartScroll } from "../hooks/useSmartScroll"; // Day 23
 
 const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus }) => {
   const [messages, setMessages] = useState([]);
@@ -33,32 +34,23 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   
   const [rawViewId, setRawViewId] = useState(null); 
   const [focusedMsgId, setFocusedMsgId] = useState(null); 
-  const [showScrollBottom, setShowScrollBottom] = useState(false);
-  const [showScrollTop, setShowScrollTop] = useState(false);
   const [editingMsgId, setEditingMsgId] = useState(null);
   const [editText, setEditText] = useState("");
   const [lightboxSrc, setLightboxSrc] = useState(null);
 
   const { error: notifyError, success } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
-  const { isDragging, droppedFile, clearDroppedFile } = useDragDrop(); // Day 22
+  const { isDragging, droppedFile, clearDroppedFile } = useDragDrop(); 
   
-  const messagesEndRef = useRef(null);
-  const containerRef = useRef(null); 
+  // Replace old scroll logic with Day 23 Smart Scroll Hook
+  const { containerRef, messagesEndRef, isAutoScrollEnabled, showScrollBottom, showScrollTop, handleScroll, scrollToBottom, scrollToTop } = useSmartScroll([messages, isLoading]);
 
   const formatTime = (date) => new Date(date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  const finalSystemInstruction = customPrompt 
-    ? `${systemInstruction}\n\nUSER OVERRIDE RULES:\n${customPrompt}` 
-    : systemInstruction;
+  const finalSystemInstruction = customPrompt ? `${systemInstruction}\n\nUSER OVERRIDE RULES:\n${customPrompt}` : systemInstruction;
 
-  // Handle Drag and Drop
   useEffect(() => {
-    if (droppedFile) {
-      setImage(droppedFile);
-      clearDroppedFile();
-      success("Image attached!");
-    }
+    if (droppedFile) { setImage(droppedFile); clearDroppedFile(); success("Image attached!"); }
   }, [droppedFile, clearDroppedFile, success]);
 
   useEffect(() => {
@@ -71,10 +63,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   useEffect(() => {
     if (transcript) { setInput((prev) => prev + (prev ? " " : "") + transcript); resetTranscript(); }
   }, [transcript, resetTranscript]);
-
-  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  const scrollToTop = () => containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-  useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
   useEffect(() => {
     const loadChat = async () => {
@@ -91,18 +79,10 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   }, [activeChatId, currentPersona]);
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (focusedMsgId !== null && !e.target.closest('.message-bubble')) setFocusedMsgId(null);
-    };
+    const handleClickOutside = (e) => { if (focusedMsgId !== null && !e.target.closest('.message-bubble')) setFocusedMsgId(null); };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [focusedMsgId]);
-
-  const handleScroll = (e) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.target;
-    setShowScrollBottom(scrollHeight - scrollTop - clientHeight > 150);
-    setShowScrollTop(scrollTop > 400);
-  };
 
   const handleExportMarkdown = () => downloadChatAsMarkdown("Aethel_Chat", messages);
   const handleExportJSON = () => downloadChatAsJSON("Aethel_Chat", messages);
@@ -130,6 +110,31 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       setMessages(prev => [...prev, { role: "model", content: response.reply, createdAt: Date.now() }]);
       if (!activeChatId && response.chatId) onChatUpdated();
     } catch (err) { notifyError("Failed to branch conversation."); } finally { setIsLoading(false); }
+  };
+
+  // Day 23 Feature: Regenerate Last Response
+  const handleRegenerate = async () => {
+    if (messages.length === 0 || isLoading) return;
+    
+    let lastUserIndex = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+       if (messages[i].role === 'user') { lastUserIndex = i; break; }
+    }
+    
+    if (lastUserIndex === -1) return; 
+
+    const userMessage = messages[lastUserIndex];
+    const newHistory = messages.slice(0, lastUserIndex + 1); 
+    
+    setMessages(newHistory);
+    setIsLoading(true);
+    stop();
+
+    try {
+      const response = await sendMessageToAI(userMessage.content, newHistory.slice(0, -1), activeChatId, userMessage.image, finalSystemInstruction);
+      setMessages([...newHistory, { role: "model", content: response.reply, createdAt: Date.now() }]);
+      if (!activeChatId && response.chatId) onChatUpdated();
+    } catch (err) { notifyError("Failed to regenerate response."); } finally { setIsLoading(false); }
   };
 
   const handleSend = async (e) => {
@@ -165,7 +170,8 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
       <Lightbox src={lightboxSrc} isOpen={!!lightboxSrc} onClose={() => setLightboxSrc(null)} />
       <StopButton isGenerating={isLoading} onStop={() => { setIsLoading(false); stop(); }} />
-      <ScrollFab showBottom={showScrollBottom} showTop={showScrollTop} onScrollToBottom={scrollToBottom} onScrollToTop={scrollToTop} />
+      
+      <ScrollFab showBottom={showScrollBottom} showTop={showScrollTop} onScrollToBottom={scrollToBottom} onScrollToTop={scrollToTop} isAutoScrollPaused={!isAutoScrollEnabled} isLoading={isLoading} />
 
       <div ref={containerRef} className={`flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth w-full ${isFocusMode ? "pt-4" : "pt-16"} transition-all duration-500`} onScroll={handleScroll}>
         {messages.map((msg, index) => (
@@ -216,7 +222,16 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                     <div className="flex gap-2">
                       <button onClick={(e) => { e.stopPropagation(); handleCopyMessage(msg.content); }} className="text-[10px] text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-1"><IoCopyOutline /></button>
                       {msg.role === "model" && !isLoading && (
-                          <><button className="text-[10px] text-slate-500 hover:text-green-400"><IoThumbsUpOutline /></button><button className="text-[10px] text-slate-500 hover:text-red-400"><IoThumbsDownOutline /></button>{index === messages.length - 1 && (<button className="text-[10px] flex items-center gap-1 text-slate-500 hover:text-indigo-400 ml-2"><IoRefresh /></button>)}</>
+                          <>
+                            <button className="text-[10px] text-slate-500 hover:text-green-400"><IoThumbsUpOutline /></button>
+                            <button className="text-[10px] text-slate-500 hover:text-red-400"><IoThumbsDownOutline /></button>
+                            {/* Day 23: Regenerate Button */}
+                            {index === messages.length - 1 && (
+                              <button onClick={handleRegenerate} className="text-[10px] flex items-center gap-1 text-slate-500 hover:text-indigo-400 ml-2 border border-slate-700 hover:border-indigo-500 px-1.5 rounded transition-all">
+                                 <IoRefresh /> <span className="hidden sm:inline">Regenerate</span>
+                              </button>
+                            )}
+                          </>
                       )}
                     </div>
                     <div className="text-[10px] text-slate-600 font-mono">{formatTime(msg.createdAt)}</div>
