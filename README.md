@@ -97,3 +97,7 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 * **Drag & Drop:** Attach images by dropping them anywhere on the screen.
 * **Audio Tuning:** Adjust AI reading speed and pitch via preferences.
 * **Code Formatting:** Global settings for code word-wrap and line numbers.
+
+* **Custom Personas:** Build and save your own AI personalities via the Persona menu.
+* **Message Regeneration:** One-click refresh for the AI's last message.
+* **Smart Auto-Scroll:** Chat safely pauses auto-scrolling if you scroll up while the AI is generating code.
