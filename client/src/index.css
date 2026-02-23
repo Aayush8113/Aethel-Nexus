@@ -236,3 +236,22 @@ textarea:focus {
 .pointer-events-none-children * {
   pointer-events: none;
 }
+
+/* Day 23 Animations */
+@keyframes breathing-wave {
+  0%, 100% { transform: scaleY(0.5); opacity: 0.3; }
+  50% { transform: scaleY(1.2); opacity: 1; }
+}
+
+.wave-dot {
+  animation: breathing-wave 1s infinite ease-in-out;
+}
+.wave-dot:nth-child(1) { animation-delay: 0s; }
+.wave-dot:nth-child(2) { animation-delay: 0.15s; }
+.wave-dot:nth-child(3) { animation-delay: 0.3s; }
+
+/* Custom Scrollbar for inner elements */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
