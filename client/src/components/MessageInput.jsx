@@ -4,10 +4,10 @@ import ImagePreview from "./ImagePreview";
 import VoiceInput from "./VoiceInput";
 import PromptMenu from "./PromptMenu";
 import { PROMPTS } from "../data/prompts";
-import { estimateTokens } from "../utils/tokenUtils";
+import { estimateTokens, getTokenMetrics } from "../utils/tokenUtils"; // Day 24
 import { getCharCount, getWordCount } from "../utils/textStats";
 
-const MessageInput = ({ input, setInput, isListening, startListening, isLoading, handleSend, isSpeaking, stopSpeaking, image, setImage }) => {
+const MessageInput = ({ input, setInput, isListening, startListening, isLoading, handleSend, isSpeaking, stopSpeaking, image, setImage, notifySuccess }) => {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   
@@ -18,7 +18,7 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 250) + "px"; // Cap auto-grow
     }
 
     if (input.startsWith("/")) {
@@ -47,19 +47,34 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
       return;
     }
 
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend(e);
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(e); }
+  };
+
+  // Day 24: Direct Clipboard Paste Support
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        setImage(file);
+        if (notifySuccess) notifySuccess("Image pasted from clipboard!");
+        break;
+      }
     }
   };
 
   const handleFileSelect = (e) => { if (e.target.files && e.target.files[0]) setImage(e.target.files[0]); };
 
+  const currentTokens = estimateTokens(input);
+  const { textColor: tokenColor } = getTokenMetrics(currentTokens);
+
   return (
     <div className="relative max-w-4xl mx-auto w-full">
       <PromptMenu isOpen={showPrompts} filteredPrompts={filteredPrompts} activeIndex={promptIndex} onSelect={handlePromptSelect} />
 
-      <form onSubmit={handleSend} className="relative group gap-2 bg-slate-900 p-2 rounded-xl border border-slate-800 shadow-xl flex flex-col z-20">
+      <form onSubmit={handleSend} className="relative group gap-2 bg-slate-900 p-2 rounded-xl border border-slate-800 shadow-2xl flex flex-col z-20">
         
         {isSpeaking && (
           <button type="button" onClick={stopSpeaking} className="absolute -top-12 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg animate-bounce flex items-center gap-2 hover:bg-indigo-500 z-50 border border-white/20">
@@ -79,9 +94,10 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
 
           <div className="relative flex-1">
             <textarea
-              ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown}
-              placeholder={isListening ? "Listening..." : "Type '/' for commands..."} rows={1}
-              className={`w-full bg-transparent text-white pl-2 pr-10 py-3 resize-none outline-none max-h-48 overflow-y-auto text-sm md:text-base custom-scrollbar ${isListening ? "placeholder-red-400" : "placeholder-slate-500"}`}
+              ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} 
+              onKeyDown={handleKeyDown} onPaste={handlePaste} // New
+              placeholder={isListening ? "Listening..." : "Type '/' for commands or paste an image..."} rows={1}
+              className={`w-full bg-transparent text-white pl-2 pr-10 py-3 resize-none outline-none overflow-y-auto text-sm md:text-base custom-scrollbar ${isListening ? "placeholder-red-400" : "placeholder-slate-500"}`}
               disabled={isLoading}
             />
           </div>
@@ -98,11 +114,10 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
         </div>
       </form>
       
-      {/* Enhanced Stats Counter */}
       <div className="absolute -bottom-6 right-2 text-[10px] text-slate-500 font-mono transition-opacity opacity-0 group-hover:opacity-100 select-none flex gap-3">
         <span>{getCharCount(input)} chars</span>
         <span>{getWordCount(input)} words</span>
-        <span className="text-indigo-400">{estimateTokens(input)} tokens</span>
+        <span className={tokenColor}>{currentTokens} tokens</span>
       </div>
     </div>
   );
