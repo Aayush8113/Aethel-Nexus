@@ -110,3 +110,7 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 - **Custom Personas:** Build and save your own AI personalities via the Persona menu.
 - **Message Regeneration:** One-click refresh for the AI's last message.
 - **Smart Auto-Scroll:** Chat safely pauses auto-scrolling if you scroll up while the AI is generating code.
+
+* **File Handling:** Paste images directly via Clipboard, or drag-and-drop `.js`/`.json`/`.txt` files to instantly inject them into the chat.
+* **Snippets:** Instantly download any AI-generated code block as a local file.
+* **Context Manager:** Highly accurate visual token tracker with status warnings.
