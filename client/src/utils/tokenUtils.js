@@ -9,9 +9,21 @@ export const calculateChatTokens = (messages) => {
   return messages.reduce((acc, msg) => acc + estimateTokens(msg.content), 0);
 };
 
-export const getTokenColor = (count) => {
-  const percentage = (count / MAX_CONTEXT_TOKENS) * 100;
-  if (percentage < 50) return "bg-emerald-500";
-  if (percentage < 80) return "bg-yellow-500";
-  return "bg-red-500";
+export const getTokenMetrics = (count) => {
+  const percentage = Math.min((count / MAX_CONTEXT_TOKENS) * 100, 100);
+  let color = "bg-emerald-500";
+  let textColor = "text-emerald-400";
+  let status = "Optimal";
+
+  if (percentage > 85) {
+    color = "bg-red-500";
+    textColor = "text-red-400";
+    status = "Critical";
+  } else if (percentage > 60) {
+    color = "bg-yellow-500";
+    textColor = "text-yellow-400";
+    status = "Warning";
+  }
+
+  return { percentage, color, textColor, status };
 };
