@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { sendMessageToAI, fetchChatById } from "../services/api";
 import { IoPerson, IoFlash, IoThumbsUpOutline, IoThumbsDownOutline, IoRefresh, IoPencil, IoCheckmark, IoClose, IoCopyOutline } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
@@ -23,7 +23,7 @@ import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { downloadChatAsMarkdown, downloadChatAsJSON } from "../utils/exportUtils";
 import { importChatFromJSON } from "../utils/importUtils"; 
 import { useDragDrop } from "../hooks/useDragDrop"; 
-import { useSmartScroll } from "../hooks/useSmartScroll"; // Day 23
+import { useSmartScroll } from "../hooks/useSmartScroll"; 
 
 const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus }) => {
   const [messages, setMessages] = useState([]);
@@ -40,18 +40,29 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
   const { error: notifyError, success } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
-  const { isDragging, droppedFile, clearDroppedFile } = useDragDrop(); 
   
-  // Replace old scroll logic with Day 23 Smart Scroll Hook
+  // Day 24: New Drag & Drop State
+  const { isDragging, droppedImage, droppedText, clearDroppedFiles } = useDragDrop(); 
+  
   const { containerRef, messagesEndRef, isAutoScrollEnabled, showScrollBottom, showScrollTop, handleScroll, scrollToBottom, scrollToTop } = useSmartScroll([messages, isLoading]);
 
   const formatTime = (date) => new Date(date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
   const finalSystemInstruction = customPrompt ? `${systemInstruction}\n\nUSER OVERRIDE RULES:\n${customPrompt}` : systemInstruction;
 
+  // Day 24: Handle File Drops intelligently
   useEffect(() => {
-    if (droppedFile) { setImage(droppedFile); clearDroppedFile(); success("Image attached!"); }
-  }, [droppedFile, clearDroppedFile, success]);
+    if (droppedImage) { 
+      setImage(droppedImage); 
+      clearDroppedFiles(); 
+      success("Image attached!"); 
+    }
+    if (droppedText) {
+      const codeBlock = `\n\n\`\`\`${droppedText.ext}\n// File: ${droppedText.name}\n${droppedText.content}\n\`\`\`\n`;
+      setInput(prev => prev + codeBlock);
+      clearDroppedFiles();
+      success(`Parsed ${droppedText.name}`);
+    }
+  }, [droppedImage, droppedText, clearDroppedFiles, success]);
 
   useEffect(() => {
     if (isAutoRead && !isLoading && messages.length > 0) {
@@ -112,23 +123,16 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     } catch (err) { notifyError("Failed to branch conversation."); } finally { setIsLoading(false); }
   };
 
-  // Day 23 Feature: Regenerate Last Response
   const handleRegenerate = async () => {
     if (messages.length === 0 || isLoading) return;
-    
     let lastUserIndex = -1;
-    for (let i = messages.length - 1; i >= 0; i--) {
-       if (messages[i].role === 'user') { lastUserIndex = i; break; }
-    }
-    
+    for (let i = messages.length - 1; i >= 0; i--) { if (messages[i].role === 'user') { lastUserIndex = i; break; } }
     if (lastUserIndex === -1) return; 
 
     const userMessage = messages[lastUserIndex];
     const newHistory = messages.slice(0, lastUserIndex + 1); 
     
-    setMessages(newHistory);
-    setIsLoading(true);
-    stop();
+    setMessages(newHistory); setIsLoading(true); stop();
 
     try {
       const response = await sendMessageToAI(userMessage.content, newHistory.slice(0, -1), activeChatId, userMessage.image, finalSystemInstruction);
@@ -156,7 +160,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   };
 
   const ThemedInput = () => (
-    <MessageInput input={input} setInput={setInput} image={image} setImage={setImage} isListening={isListening} startListening={startListening} isLoading={isLoading} handleSend={handleSend} isSpeaking={isSpeaking} stopSpeaking={stop} />
+    <MessageInput input={input} setInput={setInput} image={image} setImage={setImage} isListening={isListening} startListening={startListening} isLoading={isLoading} handleSend={handleSend} isSpeaking={isSpeaking} stopSpeaking={stop} notifySuccess={success} />
   );
 
   return (
@@ -170,7 +174,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
       <Lightbox src={lightboxSrc} isOpen={!!lightboxSrc} onClose={() => setLightboxSrc(null)} />
       <StopButton isGenerating={isLoading} onStop={() => { setIsLoading(false); stop(); }} />
-      
       <ScrollFab showBottom={showScrollBottom} showTop={showScrollTop} onScrollToBottom={scrollToBottom} onScrollToTop={scrollToTop} isAutoScrollPaused={!isAutoScrollEnabled} isLoading={isLoading} />
 
       <div ref={containerRef} className={`flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth w-full ${isFocusMode ? "pt-4" : "pt-16"} transition-all duration-500`} onScroll={handleScroll}>
@@ -225,7 +228,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                           <>
                             <button className="text-[10px] text-slate-500 hover:text-green-400"><IoThumbsUpOutline /></button>
                             <button className="text-[10px] text-slate-500 hover:text-red-400"><IoThumbsDownOutline /></button>
-                            {/* Day 23: Regenerate Button */}
                             {index === messages.length - 1 && (
                               <button onClick={handleRegenerate} className="text-[10px] flex items-center gap-1 text-slate-500 hover:text-indigo-400 ml-2 border border-slate-700 hover:border-indigo-500 px-1.5 rounded transition-all">
                                  <IoRefresh /> <span className="hidden sm:inline">Regenerate</span>
