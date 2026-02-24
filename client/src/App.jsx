@@ -22,7 +22,7 @@ import { useArtifact } from "./hooks/useArtifact";
 import { usePWA } from "./hooks/usePWA"; 
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"; 
 import { useCommandPalette } from "./hooks/useCommandPalette"; 
-import { useCustomPersonas } from "./hooks/useCustomPersonas"; // Day 23
+import { useCustomPersonas } from "./hooks/useCustomPersonas"; 
 import { PERSONAS } from "./data/personas";
 
 function App() {
@@ -46,7 +46,7 @@ function App() {
   const { isVisible: isArtifactOpen, activeCode, activeLanguage, openArtifact, closeArtifact, setActiveCode } = useArtifact();
   const { isInstallable, installApp } = usePWA(); 
   const { isPaletteOpen, closePalette, openPalette } = useCommandPalette(); 
-  const { customPersonas, addPersona, deletePersona } = useCustomPersonas(); // Day 23
+  const { customPersonas, addPersona, deletePersona } = useCustomPersonas(); 
 
   useKeyboardShortcuts({
     "n": () => { setActiveChatId(null); success("New conversation"); },
@@ -108,7 +108,7 @@ function App() {
         <PersonaModal 
           isOpen={isPersonaOpen} onClose={() => setIsPersonaOpen(false)} 
           currentPersona={currentPersona} onSelect={setCurrentPersona} 
-          customPersonas={customPersonas} onAddCustom={addPersona} onDeleteCustom={deletePersona} // Day 23
+          customPersonas={customPersonas} onAddCustom={addPersona} onDeleteCustom={deletePersona} 
         />
         <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
       </Suspense>
