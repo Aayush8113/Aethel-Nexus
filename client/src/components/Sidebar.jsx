@@ -79,4 +79,5 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, o
     </div>
   );
 };
+
 export default Sidebar;
