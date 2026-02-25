@@ -114,3 +114,7 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 * **File Handling:** Paste images directly via Clipboard, or drag-and-drop `.js`/`.json`/`.txt` files to instantly inject them into the chat.
 * **Snippets:** Instantly download any AI-generated code block as a local file.
 * **Context Manager:** Highly accurate visual token tracker with status warnings.
+
+* **Intelligent Sidebar:** Chats automatically group into "Today", "Previous 7 Days", and "Older".
+* **In-Chat Search:** Search bar to instantly filter large conversation histories.
+* **System Backup:** Export and import your Custom Personas and settings as a `.aethel` system file.
