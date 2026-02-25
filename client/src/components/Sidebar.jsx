@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { IoChatboxOutline, IoAdd, IoCubeOutline, IoTrashOutline, IoSettingsOutline, IoHappyOutline, IoPin, IoPinOutline } from "react-icons/io5";
+import { IoChatboxOutline, IoAdd, IoCubeOutline, IoTrashOutline, IoSettingsOutline, IoHappyOutline, IoPin, IoPinOutline, IoCalendarOutline } from "react-icons/io5";
 import SearchBar from "./SearchBar";
 import { useTouchSwipe } from "../hooks/useTouchSwipe";
 import PingIndicator from "./PingIndicator"; 
+import { categorizeChatsByDate } from "../utils/dateUtils"; // Day 25
 
 const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, onTogglePin, onClearAll, onOpenSettings, onOpenPersonas, isOpen, onClose, isLoading, isInstallable, installApp }) => {
   const [search, setSearch] = useState("");
@@ -20,13 +21,18 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, o
 
   const filteredChats = chats.filter(chat => chat.title.toLowerCase().includes(search.toLowerCase()));
   const pinnedChats = filteredChats.filter(chat => chat.isPinned);
-  const recentChats = filteredChats.filter(chat => !chat.isPinned);
+  const unpinnedChats = filteredChats.filter(chat => !chat.isPinned);
+  
+  // Day 25: Categorize unpinned chats
+  const { today, week, older } = categorizeChatsByDate(unpinnedChats);
 
-  const renderChatList = (list, title) => {
+  const renderChatList = (list, title, icon) => {
     if (list.length === 0) return null;
     return (
       <div className="mb-6">
-        <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-2 flex items-center gap-2">{title === "Pinned" && <IoPin className="text-indigo-400" size={10} />} {title}</h3>
+        <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-2 flex items-center gap-2">
+          {icon} {title}
+        </h3>
         <div className="space-y-1">
           {list.map((chat) => (
             <div key={chat._id} className="relative group">
@@ -60,7 +66,18 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, o
         </button>
         
         <div className="flex-1 pr-1 -mr-2 overflow-y-auto custom-scrollbar">
-          {isLoading ? (<div className="px-2 mt-2 space-y-3"><div className="w-full h-10 rounded-lg bg-slate-800/50 animate-pulse"></div></div>) : chats.length === 0 ? (<div className="flex flex-col items-center justify-center h-40 px-4 mt-8 text-center opacity-50"><IoChatboxOutline size={32} className="mb-2 text-slate-600" /><p className="text-sm italic text-slate-500 mt-2">No history found.</p></div>) : (<> {renderChatList(pinnedChats, "Pinned")} {renderChatList(recentChats, "Recent")} </>)}
+          {isLoading ? (<div className="px-2 mt-2 space-y-3"><div className="w-full h-10 rounded-lg bg-slate-800/50 animate-pulse"></div></div>) : chats.length === 0 ? (<div className="flex flex-col items-center justify-center h-40 px-4 mt-8 text-center opacity-50"><IoChatboxOutline size={32} className="mb-2 text-slate-600" /><p className="text-sm italic text-slate-500 mt-2">No history found.</p></div>) : (
+            <> 
+              {renderChatList(pinnedChats, "Pinned", <IoPin className="text-indigo-400" size={10} />)} 
+              {search ? renderChatList(filteredChats, "Search Results", <IoSearch size={10} />) : (
+                <>
+                  {renderChatList(today, "Today", <IoCalendarOutline size={10} />)}
+                  {renderChatList(week, "Previous 7 Days", <IoCalendarOutline size={10} />)}
+                  {renderChatList(older, "Older", <IoCalendarOutline size={10} />)}
+                </>
+              )}
+            </>
+          )}
         </div>
         
         <div className="pt-4 mt-4 space-y-1 border-t border-slate-800/50">
@@ -79,5 +96,4 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, o
     </div>
   );
 };
-
 export default Sidebar;
