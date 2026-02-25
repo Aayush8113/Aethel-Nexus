@@ -23,6 +23,7 @@ import { usePWA } from "./hooks/usePWA";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"; 
 import { useCommandPalette } from "./hooks/useCommandPalette"; 
 import { useCustomPersonas } from "./hooks/useCustomPersonas"; 
+import { importAppBackup } from "./utils/backupUtils"; // Day 25
 import { PERSONAS } from "./data/personas";
 
 function App() {
@@ -41,7 +42,7 @@ function App() {
   const [customPrompt, setCustomPrompt] = useLocalStorage("aethel_custom_prompt", ""); 
   
   const isOnline = useOnlineStatus();
-  const { success } = useNotify();
+  const { success, error: notifyError } = useNotify();
   const { voices, activeVoice, setActiveVoice, speak, stop, isSpeaking, rate, setRate, pitch, setPitch } = useTextToSpeech(); 
   const { isVisible: isArtifactOpen, activeCode, activeLanguage, openArtifact, closeArtifact, setActiveCode } = useArtifact();
   const { isInstallable, installApp } = usePWA(); 
@@ -85,6 +86,17 @@ function App() {
     if (confirm("⚠️ Delete ALL history? This cannot be undone.")) {
       const isCleared = await deleteAllChats();
       if (isCleared) { setChats([]); setActiveChatId(null); success("History cleared"); }
+    }
+  };
+
+  // Day 25: Handle System Restore
+  const handleRestoreSystem = async (file) => {
+    try {
+      await importAppBackup(file);
+      success("System Restored! Reloading environment...");
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err) {
+      notifyError("Failed to restore backup.");
     }
   };
 
@@ -134,6 +146,7 @@ function App() {
               activeChatId={activeChatId} onChatUpdated={loadChats} speak={speak} stop={stop} isSpeaking={isSpeaking} isAutoRead={isAutoRead}
               systemInstruction={currentPersona.instruction} customPrompt={customPrompt} currentPersona={currentPersona}
               onOpenArtifact={openArtifact} isFocusMode={isFocusMode} onToggleFocus={() => setIsFocusMode(!isFocusMode)}
+              onImportBackup={handleRestoreSystem} // Day 25
             />
           </div>
 
