@@ -17,6 +17,7 @@ import Lightbox from "./Lightbox";
 import StopButton from "./StopButton"; 
 import ScrollFab from "./ScrollFab"; 
 import DragOverlay from "./DragOverlay"; 
+import InChatSearch from "./InChatSearch"; // Day 25
 
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
@@ -24,8 +25,9 @@ import { downloadChatAsMarkdown, downloadChatAsJSON } from "../utils/exportUtils
 import { importChatFromJSON } from "../utils/importUtils"; 
 import { useDragDrop } from "../hooks/useDragDrop"; 
 import { useSmartScroll } from "../hooks/useSmartScroll"; 
+import { useChatSearch } from "../hooks/useChatSearch"; // Day 25
 
-const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus }) => {
+const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus, onImportBackup }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [image, setImage] = useState(null);
@@ -40,27 +42,20 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
   const { error: notifyError, success } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
-  
-  // Day 24: New Drag & Drop State
   const { isDragging, droppedImage, droppedText, clearDroppedFiles } = useDragDrop(); 
-  
   const { containerRef, messagesEndRef, isAutoScrollEnabled, showScrollBottom, showScrollTop, handleScroll, scrollToBottom, scrollToTop } = useSmartScroll([messages, isLoading]);
+  
+  // Day 25: Search State
+  const { isSearchOpen, searchQuery, setSearchQuery, toggleSearch } = useChatSearch();
 
   const formatTime = (date) => new Date(date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const finalSystemInstruction = customPrompt ? `${systemInstruction}\n\nUSER OVERRIDE RULES:\n${customPrompt}` : systemInstruction;
 
-  // Day 24: Handle File Drops intelligently
   useEffect(() => {
-    if (droppedImage) { 
-      setImage(droppedImage); 
-      clearDroppedFiles(); 
-      success("Image attached!"); 
-    }
+    if (droppedImage) { setImage(droppedImage); clearDroppedFiles(); success("Image attached!"); }
     if (droppedText) {
       const codeBlock = `\n\n\`\`\`${droppedText.ext}\n// File: ${droppedText.name}\n${droppedText.content}\n\`\`\`\n`;
-      setInput(prev => prev + codeBlock);
-      clearDroppedFiles();
-      success(`Parsed ${droppedText.name}`);
+      setInput(prev => prev + codeBlock); clearDroppedFiles(); success(`Parsed ${droppedText.name}`);
     }
   }, [droppedImage, droppedText, clearDroppedFiles, success]);
 
@@ -71,9 +66,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     }
   }, [messages, isLoading, isAutoRead]);
 
-  useEffect(() => {
-    if (transcript) { setInput((prev) => prev + (prev ? " " : "") + transcript); resetTranscript(); }
-  }, [transcript, resetTranscript]);
+  useEffect(() => { if (transcript) { setInput((prev) => prev + (prev ? " " : "") + transcript); resetTranscript(); } }, [transcript, resetTranscript]);
 
   useEffect(() => {
     const loadChat = async () => {
@@ -106,8 +99,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       setMessages(importedMessages); success("Chat imported successfully! (Unsaved)");
     } catch (err) { notifyError("Failed to import chat. Invalid format."); }
   };
-
-  const handleEditClick = (index, content) => { setEditingMsgId(index); setEditText(content); };
 
   const submitEdit = async (index) => {
     if (!editText.trim()) return;
@@ -163,35 +154,52 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     <MessageInput input={input} setInput={setInput} image={image} setImage={setImage} isListening={isListening} startListening={startListening} isLoading={isLoading} handleSend={handleSend} isSpeaking={isSpeaking} stopSpeaking={stop} notifySuccess={success} />
   );
 
+  // Day 25: Filter messages based on search query
+  const displayedMessages = searchQuery 
+    ? messages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
+    : messages;
+
   return (
     <div className={`flex flex-col h-full bg-slate-950 text-slate-100 relative w-full chat-container ${focusedMsgId !== null ? 'has-focus' : ''}`}>
-      
       <DragOverlay isDragging={isDragging} /> 
 
-      <ChatHeader currentPersona={currentPersona} onExportMarkdown={handleExportMarkdown} onExportJSON={handleExportJSON} onCopyAll={handleCopyAll} onImportJSON={handleImportJSON} isFocusMode={isFocusMode} onToggleFocus={onToggleFocus} hasCustomPrompt={!!customPrompt} />
+      <ChatHeader 
+        currentPersona={currentPersona} onExportMarkdown={handleExportMarkdown} onExportJSON={handleExportJSON} onCopyAll={handleCopyAll} onImportJSON={handleImportJSON} onImportBackup={onImportBackup}
+        isFocusMode={isFocusMode} onToggleFocus={onToggleFocus} hasCustomPrompt={!!customPrompt}
+        onToggleSearch={toggleSearch} isSearchOpen={isSearchOpen} // Day 25
+      />
       
+      <InChatSearch isOpen={isSearchOpen} query={searchQuery} setQuery={setSearchQuery} onClose={toggleSearch} matchCount={displayedMessages.length} />
+
       {!isFocusMode && (<div className="relative w-full z-10 transition-all duration-500"><ContextBar messages={messages} /></div>)}
 
       <Lightbox src={lightboxSrc} isOpen={!!lightboxSrc} onClose={() => setLightboxSrc(null)} />
       <StopButton isGenerating={isLoading} onStop={() => { setIsLoading(false); stop(); }} />
       <ScrollFab showBottom={showScrollBottom} showTop={showScrollTop} onScrollToBottom={scrollToBottom} onScrollToTop={scrollToTop} isAutoScrollPaused={!isAutoScrollEnabled} isLoading={isLoading} />
 
-      <div ref={containerRef} className={`flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth w-full ${isFocusMode ? "pt-4" : "pt-16"} transition-all duration-500`} onScroll={handleScroll}>
-        {messages.map((msg, index) => (
-          <div key={index} className={`message-bubble flex gap-4 animate-fade-in ${msg.role === "user" ? "justify-end" : "justify-start"} ${focusedMsgId === index ? "is-focused" : ""}`} onDoubleClick={(e) => { e.stopPropagation(); setFocusedMsgId(focusedMsgId === index ? null : index); }}>
+      <div ref={containerRef} className={`flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth w-full ${isFocusMode ? "pt-4" : isSearchOpen ? "pt-24" : "pt-16"} transition-all duration-500`} onScroll={handleScroll}>
+        {displayedMessages.map((msg, index) => {
+          // Identify actual index in the raw array for Focus Mode and Regenerate matching
+          const rawIndex = messages.indexOf(msg);
+          
+          // Day 25: Very simple highlight wrapper for the raw text if searching
+          let displayContent = msg.content;
+          
+          return (
+          <div key={rawIndex} className={`message-bubble flex gap-4 animate-fade-in ${msg.role === "user" ? "justify-end" : "justify-start"} ${focusedMsgId === rawIndex ? "is-focused" : ""}`} onDoubleClick={(e) => { e.stopPropagation(); setFocusedMsgId(focusedMsgId === rawIndex ? null : rawIndex); }}>
             {msg.role === "model" && (
               <div className="flex flex-col items-center gap-1 mt-1">
-                <div className={`w-8 h-8 rounded-lg bg-indigo-600 flex-shrink-0 flex items-center justify-center shadow-lg ${readingMsgId === index && isSpeaking ? "animate-speaking" : ""}`}><IoFlash className="text-white text-sm" /></div>
-                <SpeakerButton isActive={readingMsgId === index && isSpeaking} onClick={() => { if (readingMsgId === index && isSpeaking) { stop(); setReadingMsgId(null); } else { speak(msg.content); setReadingMsgId(index); } }} />
+                <div className={`w-8 h-8 rounded-lg bg-indigo-600 flex-shrink-0 flex items-center justify-center shadow-lg ${readingMsgId === rawIndex && isSpeaking ? "animate-speaking" : ""}`}><IoFlash className="text-white text-sm" /></div>
+                <SpeakerButton isActive={readingMsgId === rawIndex && isSpeaking} onClick={() => { if (readingMsgId === rawIndex && isSpeaking) { stop(); setReadingMsgId(null); } else { speak(msg.content); setReadingMsgId(rawIndex); } }} />
               </div>
             )}
             
-            {msg.role === "user" && editingMsgId === index ? (
+            {msg.role === "user" && editingMsgId === rawIndex ? (
               <div className="w-full max-w-[85%] flex flex-col items-end gap-2 animate-fade-in" onClick={e => e.stopPropagation()}>
                 <textarea value={editText} onChange={(e) => setEditText(e.target.value)} className="w-full bg-slate-800 text-white p-3 rounded-xl border border-indigo-500 focus:outline-none resize-none shadow-xl" rows={3} autoFocus />
                 <div className="flex gap-2">
                   <button onClick={() => setEditingMsgId(null)} className="px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:bg-slate-800 flex items-center gap-1"><IoClose /> Cancel</button>
-                  <button onClick={() => submitEdit(index)} className="px-3 py-1.5 rounded-lg text-xs bg-indigo-600 text-white font-bold hover:bg-indigo-500 flex items-center gap-1 shadow-lg"><IoCheckmark /> Save</button>
+                  <button onClick={() => submitEdit(rawIndex)} className="px-3 py-1.5 rounded-lg text-xs bg-indigo-600 text-white font-bold hover:bg-indigo-500 flex items-center gap-1 shadow-lg"><IoCheckmark /> Save</button>
                 </div>
               </div>
             ) : (
@@ -203,37 +211,29 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                 )}
                 
                 <div className="prose prose-invert max-w-none text-sm leading-7">
-                  {rawViewId === index ? (
-                     <pre className="whitespace-pre-wrap text-xs text-slate-500 font-mono bg-black/30 p-2 rounded border border-slate-700/50 overflow-x-auto" onDoubleClick={() => setRawViewId(null)}>{msg.content}</pre>
+                  {rawViewId === rawIndex ? (
+                     <pre className="whitespace-pre-wrap text-xs text-slate-500 font-mono bg-black/30 p-2 rounded border border-slate-700/50 overflow-x-auto" onDoubleClick={() => setRawViewId(null)}>{displayContent}</pre>
                   ) : (
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}
                       components={{
                         code({node, className, children, ...props}) {
                           const match = /language-(\w+)/.exec(className || '');
-                          return match ? (<CodeBlock language={match[1]} value={String(children).replace(/\n$/, '')} onOpenArtifact={onOpenArtifact} />) : (<code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono" onDoubleClick={() => setRawViewId(index)} {...props}>{children}</code>)
+                          return match ? (<CodeBlock language={match[1]} value={String(children).replace(/\n$/, '')} onOpenArtifact={onOpenArtifact} />) : (<code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono" onDoubleClick={() => setRawViewId(rawIndex)} {...props}>{children}</code>)
                         },
                         blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-indigo-500 bg-slate-900/50 py-2 px-4 my-4 rounded-r-lg text-slate-300 italic shadow-sm" {...props} />
                       }}
-                    >{msg.content}</ReactMarkdown>
+                    >{displayContent}</ReactMarkdown>
                   )}
                 </div>
 
-                 {msg.role === "user" && !isLoading && (<button onClick={(e) => { e.stopPropagation(); handleEditClick(index, msg.content); }} className="absolute -left-8 top-2 p-1.5 text-slate-500 hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/50 rounded-full"><IoPencil size={14} /></button>)}
+                 {msg.role === "user" && !isLoading && !searchQuery && (<button onClick={(e) => { e.stopPropagation(); setEditingMsgId(rawIndex); setEditText(msg.content); }} className="absolute -left-8 top-2 p-1.5 text-slate-500 hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/50 rounded-full"><IoPencil size={14} /></button>)}
 
                  <div className="flex justify-between items-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity select-none">
                     <div className="flex gap-2">
                       <button onClick={(e) => { e.stopPropagation(); handleCopyMessage(msg.content); }} className="text-[10px] text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-1"><IoCopyOutline /></button>
-                      {msg.role === "model" && !isLoading && (
-                          <>
-                            <button className="text-[10px] text-slate-500 hover:text-green-400"><IoThumbsUpOutline /></button>
-                            <button className="text-[10px] text-slate-500 hover:text-red-400"><IoThumbsDownOutline /></button>
-                            {index === messages.length - 1 && (
-                              <button onClick={handleRegenerate} className="text-[10px] flex items-center gap-1 text-slate-500 hover:text-indigo-400 ml-2 border border-slate-700 hover:border-indigo-500 px-1.5 rounded transition-all">
-                                 <IoRefresh /> <span className="hidden sm:inline">Regenerate</span>
-                              </button>
-                            )}
-                          </>
+                      {msg.role === "model" && !isLoading && !searchQuery && (
+                          <><button className="text-[10px] text-slate-500 hover:text-green-400"><IoThumbsUpOutline /></button><button className="text-[10px] text-slate-500 hover:text-red-400"><IoThumbsDownOutline /></button>{rawIndex === messages.length - 1 && (<button onClick={handleRegenerate} className="text-[10px] flex items-center gap-1 text-slate-500 hover:text-indigo-400 ml-2 border border-slate-700 hover:border-indigo-500 px-1.5 rounded transition-all"><IoRefresh /> <span className="hidden sm:inline">Regenerate</span></button>)}</>
                       )}
                     </div>
                     <div className="text-[10px] text-slate-600 font-mono">{formatTime(msg.createdAt)}</div>
@@ -242,7 +242,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
             )}
             {msg.role === "user" && (<div className="w-8 h-8 rounded-lg bg-slate-700 flex-shrink-0 flex items-center justify-center mt-1"><IoPerson className="text-slate-400 text-sm" /></div>)}
           </div>
-        ))}
+        )})}
 
         {isLoading && (
           <div className="flex gap-4 justify-start animate-fade-in"><div className="w-8 h-8 rounded-lg bg-indigo-600 flex-shrink-0 flex items-center justify-center mt-1"><IoFlash className="text-white text-sm animate-pulse" /></div><TypingIndicator /></div>
@@ -250,11 +250,11 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      <div className={`p-4 md:p-6 bg-slate-950/80 backdrop-blur-md border-t border-slate-800 sticky bottom-0 z-10 w-full transition-all duration-500 ${isFocusMode ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}>
+      <div className={`p-4 md:p-6 bg-slate-950/80 backdrop-blur-md border-t border-slate-800 sticky bottom-0 z-10 w-full transition-all duration-500 ${isFocusMode || isSearchOpen ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
         <ThemedInput />
       </div>
 
-      {isFocusMode && (
+      {isFocusMode && !isSearchOpen && (
          <div className="fixed bottom-0 left-0 right-0 p-6 z-40 flex justify-center bg-gradient-to-t from-black via-black/90 to-transparent pt-20 animate-fade-in-up pointer-events-none">
             <div className="w-full max-w-3xl pointer-events-auto"><ThemedInput /></div>
          </div>
