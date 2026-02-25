@@ -260,3 +260,12 @@ textarea {
   -webkit-user-select: text;
   user-select: text;
 }
+
+/* Search Highlight Styles */
+.search-highlight {
+  background-color: rgba(79, 70, 229, 0.4);
+  color: #fff;
+  border-radius: 2px;
+  padding: 0 2px;
+  border-bottom: 1px solid #818cf8;
+}
