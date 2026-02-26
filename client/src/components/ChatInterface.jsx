@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { sendMessageToAI, fetchChatById } from "../services/api";
-import { IoPerson, IoFlash, IoThumbsUpOutline, IoThumbsDownOutline, IoRefresh, IoPencil, IoCheckmark, IoClose, IoCopyOutline } from "react-icons/io5";
+import { IoPerson, IoFlash, IoThumbsUpOutline, IoThumbsDownOutline, IoRefresh, IoPencil, IoCheckmark, IoClose, IoCopyOutline, IoBookmarkOutline, IoBookmark, IoArrowUndoOutline } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm"; 
 import remarkMath from "remark-math"; 
@@ -17,7 +17,7 @@ import Lightbox from "./Lightbox";
 import StopButton from "./StopButton"; 
 import ScrollFab from "./ScrollFab"; 
 import DragOverlay from "./DragOverlay"; 
-import InChatSearch from "./InChatSearch"; // Day 25
+import InChatSearch from "./InChatSearch"; 
 
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
@@ -25,11 +25,15 @@ import { downloadChatAsMarkdown, downloadChatAsJSON } from "../utils/exportUtils
 import { importChatFromJSON } from "../utils/importUtils"; 
 import { useDragDrop } from "../hooks/useDragDrop"; 
 import { useSmartScroll } from "../hooks/useSmartScroll"; 
-import { useChatSearch } from "../hooks/useChatSearch"; // Day 25
+import { useChatSearch } from "../hooks/useChatSearch"; 
+import { useInputDraft } from "../hooks/useInputDraft"; // Day 26
 
-const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus, onImportBackup }) => {
+const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus, onImportBackup, toggleBookmark, isBookmarked, onToggleBookmarks }) => {
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+  
+  // Day 26: Swap raw state for persistent Draft State
+  const [input, setInput] = useInputDraft(activeChatId);
+
   const [image, setImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [readingMsgId, setReadingMsgId] = useState(null);
@@ -44,8 +48,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
   const { isDragging, droppedImage, droppedText, clearDroppedFiles } = useDragDrop(); 
   const { containerRef, messagesEndRef, isAutoScrollEnabled, showScrollBottom, showScrollTop, handleScroll, scrollToBottom, scrollToTop } = useSmartScroll([messages, isLoading]);
-  
-  // Day 25: Search State
   const { isSearchOpen, searchQuery, setSearchQuery, toggleSearch } = useChatSearch();
 
   const formatTime = (date) => new Date(date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -57,7 +59,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       const codeBlock = `\n\n\`\`\`${droppedText.ext}\n// File: ${droppedText.name}\n${droppedText.content}\n\`\`\`\n`;
       setInput(prev => prev + codeBlock); clearDroppedFiles(); success(`Parsed ${droppedText.name}`);
     }
-  }, [droppedImage, droppedText, clearDroppedFiles, success]);
+  }, [droppedImage, droppedText, clearDroppedFiles, success, setInput]);
 
   useEffect(() => {
     if (isAutoRead && !isLoading && messages.length > 0) {
@@ -66,7 +68,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     }
   }, [messages, isLoading, isAutoRead]);
 
-  useEffect(() => { if (transcript) { setInput((prev) => prev + (prev ? " " : "") + transcript); resetTranscript(); } }, [transcript, resetTranscript]);
+  useEffect(() => { if (transcript) { setInput((prev) => prev + (prev ? " " : "") + transcript); resetTranscript(); } }, [transcript, resetTranscript, setInput]);
 
   useEffect(() => {
     const loadChat = async () => {
@@ -88,6 +90,13 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     return () => document.removeEventListener('click', handleClickOutside);
   }, [focusedMsgId]);
 
+  const handleScrollEvent = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    setShowScrollBottom(scrollHeight - scrollTop - clientHeight > 150);
+    setShowScrollTop(scrollTop > 400);
+    handleScroll(e);
+  };
+
   const handleExportMarkdown = () => downloadChatAsMarkdown("Aethel_Chat", messages);
   const handleExportJSON = () => downloadChatAsJSON("Aethel_Chat", messages);
   const handleCopyAll = () => { navigator.clipboard.writeText(messages.map(m => `${m.role.toUpperCase()}:\n${m.content}`).join("\n\n---\n\n")); success("Copied to clipboard!"); };
@@ -97,7 +106,15 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     try {
       const importedMessages = await importChatFromJSON(file);
       setMessages(importedMessages); success("Chat imported successfully! (Unsaved)");
-    } catch (err) { notifyError("Failed to import chat. Invalid format."); }
+    } catch (err) { notifyError("Failed to import chat."); }
+  };
+
+  // Day 26: Quote Message logic
+  const handleQuote = (content) => {
+    const snippet = content.length > 150 ? content.substring(0, 150) + "..." : content;
+    const quote = `\n> ${snippet.replace(/\n/g, '\n> ')}\n\n`;
+    setInput(prev => prev + quote);
+    success("Quoted in input!");
   };
 
   const submitEdit = async (index) => {
@@ -141,7 +158,8 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     setMessages((prev) => [...prev, userMessage]);
     
     const textToSend = input; const imageToSend = image;
-    setInput(""); setImage(null); setIsLoading(true);
+    setInput(""); // Clears draft via hook
+    setImage(null); setIsLoading(true);
 
     try {
       const response = await sendMessageToAI(textToSend, messages, activeChatId, imageToSend, finalSystemInstruction);
@@ -154,20 +172,13 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     <MessageInput input={input} setInput={setInput} image={image} setImage={setImage} isListening={isListening} startListening={startListening} isLoading={isLoading} handleSend={handleSend} isSpeaking={isSpeaking} stopSpeaking={stop} notifySuccess={success} />
   );
 
-  // Day 25: Filter messages based on search query
-  const displayedMessages = searchQuery 
-    ? messages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
-    : messages;
+  const displayedMessages = searchQuery ? messages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase())) : messages;
 
   return (
     <div className={`flex flex-col h-full bg-slate-950 text-slate-100 relative w-full chat-container ${focusedMsgId !== null ? 'has-focus' : ''}`}>
       <DragOverlay isDragging={isDragging} /> 
 
-      <ChatHeader 
-        currentPersona={currentPersona} onExportMarkdown={handleExportMarkdown} onExportJSON={handleExportJSON} onCopyAll={handleCopyAll} onImportJSON={handleImportJSON} onImportBackup={onImportBackup}
-        isFocusMode={isFocusMode} onToggleFocus={onToggleFocus} hasCustomPrompt={!!customPrompt}
-        onToggleSearch={toggleSearch} isSearchOpen={isSearchOpen} // Day 25
-      />
+      <ChatHeader currentPersona={currentPersona} onExportMarkdown={handleExportMarkdown} onExportJSON={handleExportJSON} onCopyAll={handleCopyAll} onImportJSON={handleImportJSON} onImportBackup={onImportBackup} isFocusMode={isFocusMode} onToggleFocus={onToggleFocus} hasCustomPrompt={!!customPrompt} onToggleSearch={toggleSearch} isSearchOpen={isSearchOpen} onToggleBookmarks={onToggleBookmarks} />
       
       <InChatSearch isOpen={isSearchOpen} query={searchQuery} setQuery={setSearchQuery} onClose={toggleSearch} matchCount={displayedMessages.length} />
 
@@ -177,12 +188,9 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       <StopButton isGenerating={isLoading} onStop={() => { setIsLoading(false); stop(); }} />
       <ScrollFab showBottom={showScrollBottom} showTop={showScrollTop} onScrollToBottom={scrollToBottom} onScrollToTop={scrollToTop} isAutoScrollPaused={!isAutoScrollEnabled} isLoading={isLoading} />
 
-      <div ref={containerRef} className={`flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth w-full ${isFocusMode ? "pt-4" : isSearchOpen ? "pt-24" : "pt-16"} transition-all duration-500`} onScroll={handleScroll}>
+      <div ref={containerRef} className={`flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth w-full ${isFocusMode ? "pt-4" : isSearchOpen ? "pt-24" : "pt-16"} transition-all duration-500`} onScroll={handleScrollEvent}>
         {displayedMessages.map((msg, index) => {
-          // Identify actual index in the raw array for Focus Mode and Regenerate matching
           const rawIndex = messages.indexOf(msg);
-          
-          // Day 25: Very simple highlight wrapper for the raw text if searching
           let displayContent = msg.content;
           
           return (
@@ -231,9 +239,16 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
                  <div className="flex justify-between items-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity select-none">
                     <div className="flex gap-2">
-                      <button onClick={(e) => { e.stopPropagation(); handleCopyMessage(msg.content); }} className="text-[10px] text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-1"><IoCopyOutline /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleCopyMessage(msg.content); }} className="text-[10px] text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-1" title="Copy"><IoCopyOutline /></button>
+                      
+                      {/* Day 26: Quote & Bookmark Controls */}
+                      <button onClick={(e) => { e.stopPropagation(); handleQuote(msg.content); }} className="text-[10px] text-slate-500 hover:text-blue-400 transition-colors flex items-center gap-1 ml-1" title="Quote Message"><IoArrowUndoOutline /></button>
+                      <button onClick={(e) => { e.stopPropagation(); toggleBookmark(msg, activeChatId); }} className={`text-[10px] transition-colors flex items-center gap-1 ml-1 ${isBookmarked(msg, activeChatId) ? 'text-amber-400' : 'text-slate-500 hover:text-amber-400'}`} title="Bookmark">
+                        {isBookmarked(msg, activeChatId) ? <IoBookmark /> : <IoBookmarkOutline />}
+                      </button>
+
                       {msg.role === "model" && !isLoading && !searchQuery && (
-                          <><button className="text-[10px] text-slate-500 hover:text-green-400"><IoThumbsUpOutline /></button><button className="text-[10px] text-slate-500 hover:text-red-400"><IoThumbsDownOutline /></button>{rawIndex === messages.length - 1 && (<button onClick={handleRegenerate} className="text-[10px] flex items-center gap-1 text-slate-500 hover:text-indigo-400 ml-2 border border-slate-700 hover:border-indigo-500 px-1.5 rounded transition-all"><IoRefresh /> <span className="hidden sm:inline">Regenerate</span></button>)}</>
+                          <><button className="text-[10px] text-slate-500 hover:text-green-400 ml-2"><IoThumbsUpOutline /></button><button className="text-[10px] text-slate-500 hover:text-red-400"><IoThumbsDownOutline /></button>{rawIndex === messages.length - 1 && (<button onClick={handleRegenerate} className="text-[10px] flex items-center gap-1 text-slate-500 hover:text-indigo-400 ml-2 border border-slate-700 hover:border-indigo-500 px-1.5 rounded transition-all"><IoRefresh /> <span className="hidden sm:inline">Regenerate</span></button>)}</>
                       )}
                     </div>
                     <div className="text-[10px] text-slate-600 font-mono">{formatTime(msg.createdAt)}</div>
