@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { IoEllipsisVertical, IoWarningOutline, IoSearch } from "react-icons/io5";
+import { IoEllipsisVertical, IoWarningOutline, IoSearch, IoBookmark } from "react-icons/io5";
 import ExportMenu from "./ExportMenu";
 import PersonaBadge from "./PersonaBadge";
 import FocusToggle from "./FocusToggle";
 
-const ChatHeader = ({ currentPersona, onExportMarkdown, onExportJSON, onCopyAll, onImportJSON, onImportBackup, isFocusMode, onToggleFocus, hasCustomPrompt, onToggleSearch, isSearchOpen }) => {
+const ChatHeader = ({ currentPersona, onExportMarkdown, onExportJSON, onCopyAll, onImportJSON, onImportBackup, isFocusMode, onToggleFocus, hasCustomPrompt, onToggleSearch, isSearchOpen, onToggleBookmarks }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
@@ -19,9 +19,14 @@ const ChatHeader = ({ currentPersona, onExportMarkdown, onExportJSON, onCopyAll,
       </div>
       <div className="pointer-events-auto flex items-center gap-2">
         
-        {/* Day 25: Search Toggle */}
+        {/* Bookmarks Toggle */}
+        <button onClick={onToggleBookmarks} className="p-2 rounded-full transition-all duration-300 bg-slate-900/80 text-amber-400 border border-slate-700 hover:bg-slate-800" title="View Bookmarks">
+          <IoBookmark size={18} />
+        </button>
+
+        {/* Search Toggle */}
         <button onClick={onToggleSearch} className={`p-2 rounded-full transition-all duration-300 ${isSearchOpen ? "bg-indigo-600 text-white shadow-lg" : "bg-slate-900/80 text-slate-400 border border-slate-700 hover:text-white hover:bg-slate-800"}`} title="Search Chat">
-          <IoSearch size={20} />
+          <IoSearch size={18} />
         </button>
 
         <FocusToggle isFocusMode={isFocusMode} onToggle={onToggleFocus} />
@@ -31,12 +36,9 @@ const ChatHeader = ({ currentPersona, onExportMarkdown, onExportJSON, onCopyAll,
             <IoEllipsisVertical size={20} />
           </button>
           <ExportMenu 
-            isOpen={isMenuOpen} 
-            onExportMarkdown={() => { onExportMarkdown(); setIsMenuOpen(false); }} 
-            onExportJSON={() => { onExportJSON(); setIsMenuOpen(false); }} 
-            onCopyAll={() => { onCopyAll(); setIsMenuOpen(false); }} 
-            onImportJSON={(file) => { onImportJSON(file); setIsMenuOpen(false); }} 
-            onImportBackup={(file) => { onImportBackup(file); setIsMenuOpen(false); }} // Day 25
+            isOpen={isMenuOpen} onExportMarkdown={() => { onExportMarkdown(); setIsMenuOpen(false); }} onExportJSON={() => { onExportJSON(); setIsMenuOpen(false); }} 
+            onCopyAll={() => { onCopyAll(); setIsMenuOpen(false); }} onImportJSON={(file) => { onImportJSON(file); setIsMenuOpen(false); }} 
+            onImportBackup={(file) => { onImportBackup(file); setIsMenuOpen(false); }} 
           />
           {isMenuOpen && <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsMenuOpen(false)} />}
         </div>
