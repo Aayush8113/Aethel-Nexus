@@ -118,3 +118,8 @@ Built by **[Your Name]** as part of an advanced Full Stack AI initiative.
 * **Intelligent Sidebar:** Chats automatically group into "Today", "Previous 7 Days", and "Older".
 * **In-Chat Search:** Search bar to instantly filter large conversation histories.
 * **System Backup:** Export and import your Custom Personas and settings as a `.aethel` system file.
+
+* **Workflow Protection:** Automatic prompt drafting saves your input even if you change chats.
+* **Global Bookmarks:** Star specific code blocks and view them in a dedicated sliding panel.
+* **Message Quoting:** Instantly reply to specific AI messages to maintain strict context.
+* **Magic Code Wrapper:** Input automatically detects pasted raw code and formats it for you.
