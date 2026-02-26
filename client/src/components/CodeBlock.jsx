@@ -1,4 +1,4 @@
-import { IoCopyOutline, IoCheckmarkOutline, IoResize, IoChevronDown, IoChevronUp, IoDownloadOutline } from "react-icons/io5";
+import { IoCopyOutline, IoCheckmarkOutline, IoResize, IoChevronDown, IoChevronUp, IoDownloadOutline, IoMenuOutline } from "react-icons/io5";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark, dracula, materialDark, atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useState } from "react";
@@ -11,17 +11,17 @@ const themeMap = { oneDark, dracula, materialDark, atomDark };
 const CodeBlock = ({ language, value, onOpenArtifact }) => {
   const [copied, setCopied] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false); 
+  
   const { activeThemeId } = useCodeTheme(); 
-  const { showLineNumbers, wordWrap } = useCodeSettings(); 
+  const { showLineNumbers, wordWrap: globalWordWrap } = useCodeSettings(); 
+  
+  // Day 26: Local override for word wrap
+  const [localWrap, setLocalWrap] = useState(globalWordWrap);
 
   const lineCount = value.split('\n').length;
   const isLongCode = lineCount > 15;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(value);
-    setCopied(true); setTimeout(() => setCopied(false), 2000);
-  };
-
+  const handleCopy = () => { navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   const handleDownload = () => {
     const ext = getExtension(language);
     const element = document.createElement("a");
@@ -46,6 +46,9 @@ const CodeBlock = ({ language, value, onOpenArtifact }) => {
            )}
         </div>
         <div className="flex items-center gap-3">
+           <button onClick={() => setLocalWrap(!localWrap)} className={`flex items-center gap-1.5 transition-colors opacity-0 group-hover:opacity-100 ${localWrap ? 'text-indigo-400' : 'hover:text-white'}`} title="Toggle Wrap">
+             <IoMenuOutline size={14} />
+           </button>
            {onOpenArtifact && (
              <button onClick={() => onOpenArtifact(value, language)} className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 transition-colors opacity-0 group-hover:opacity-100" title="Open in Editor">
                <IoResize size={14} /><span className="hidden sm:inline text-[10px]">Editor</span>
@@ -54,17 +57,16 @@ const CodeBlock = ({ language, value, onOpenArtifact }) => {
            <button onClick={handleDownload} className="flex items-center gap-1.5 hover:text-white transition-colors opacity-0 group-hover:opacity-100" title="Download Snippet">
              <IoDownloadOutline size={14} />
            </button>
-           <button onClick={handleCopy} className="flex items-center gap-1.5 hover:text-white transition-colors" title="Copy to Clipboard">
+           <button onClick={handleCopy} className="flex items-center gap-1.5 hover:text-white transition-colors" title="Copy">
              {copied ? <IoCheckmarkOutline size={14} className="text-green-400" /> : <IoCopyOutline size={14} />}
            </button>
         </div>
       </div>
-      
       <div className={`overflow-x-auto custom-scrollbar transition-all duration-300 ${isCollapsed ? 'max-h-32' : ''}`}>
         <SyntaxHighlighter
           language={language} style={themeMap[activeThemeId] || oneDark}
           customStyle={{ margin: 0, padding: '1.5rem', fontSize: '0.9rem', lineHeight: '1.5', background: 'transparent' }}
-          showLineNumbers={showLineNumbers} wrapLines={wordWrap} wrapLongLines={wordWrap}
+          showLineNumbers={showLineNumbers} wrapLines={localWrap} wrapLongLines={localWrap}
         >
           {value}
         </SyntaxHighlighter>
