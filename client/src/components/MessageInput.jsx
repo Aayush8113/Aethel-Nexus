@@ -1,11 +1,12 @@
 import { useRef, useEffect, useState } from "react";
-import { IoCloseCircleOutline, IoImageOutline, IoSend } from "react-icons/io5";
+import { IoCloseCircleOutline, IoImageOutline, IoSend, IoColorWandOutline } from "react-icons/io5";
 import ImagePreview from "./ImagePreview";
 import VoiceInput from "./VoiceInput";
 import PromptMenu from "./PromptMenu";
 import { PROMPTS } from "../data/prompts";
-import { estimateTokens, getTokenMetrics } from "../utils/tokenUtils"; // Day 24
+import { estimateTokens, getTokenMetrics } from "../utils/tokenUtils"; 
 import { getCharCount, getWordCount } from "../utils/textStats";
+import { autoFormatInput } from "../utils/codeFormatUtils"; // Day 26
 
 const MessageInput = ({ input, setInput, isListening, startListening, isLoading, handleSend, isSpeaking, stopSpeaking, image, setImage, notifySuccess }) => {
   const textareaRef = useRef(null);
@@ -18,7 +19,7 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 250) + "px"; // Cap auto-grow
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 250) + "px"; 
     }
 
     if (input.startsWith("/")) {
@@ -46,11 +47,9 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
       else if (e.key === "Escape") { setShowPrompts(false); }
       return;
     }
-
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(e); }
   };
 
-  // Day 24: Direct Clipboard Paste Support
   const handlePaste = (e) => {
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -66,6 +65,14 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
   };
 
   const handleFileSelect = (e) => { if (e.target.files && e.target.files[0]) setImage(e.target.files[0]); };
+
+  const handleMagicFormat = () => {
+    const formatted = autoFormatInput(input);
+    if (formatted !== input) {
+      setInput(formatted);
+      if (notifySuccess) notifySuccess("Code auto-formatted!");
+    }
+  };
 
   const currentTokens = estimateTokens(input);
   const { textColor: tokenColor } = getTokenMetrics(currentTokens);
@@ -95,17 +102,22 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
           <div className="relative flex-1">
             <textarea
               ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} 
-              onKeyDown={handleKeyDown} onPaste={handlePaste} // New
-              placeholder={isListening ? "Listening..." : "Type '/' for commands or paste an image..."} rows={1}
+              onKeyDown={handleKeyDown} onPaste={handlePaste} 
+              placeholder={isListening ? "Listening..." : "Type '/' for commands or paste code..."} rows={1}
               className={`w-full bg-transparent text-white pl-2 pr-10 py-3 resize-none outline-none overflow-y-auto text-sm md:text-base custom-scrollbar ${isListening ? "placeholder-red-400" : "placeholder-slate-500"}`}
               disabled={isLoading}
             />
           </div>
 
           {input && !isLoading && (
-            <button type="button" onClick={() => { setInput(""); setShowPrompts(false); }} className="mb-3 text-slate-500 hover:text-white transition-colors">
-              <IoCloseCircleOutline size={20} />
-            </button>
+            <>
+              <button type="button" onClick={handleMagicFormat} className="mb-3 text-slate-500 hover:text-indigo-400 transition-colors mr-1" title="Auto-Format Code">
+                <IoColorWandOutline size={20} />
+              </button>
+              <button type="button" onClick={() => { setInput(""); setShowPrompts(false); }} className="mb-3 text-slate-500 hover:text-red-400 transition-colors" title="Clear">
+                <IoCloseCircleOutline size={20} />
+              </button>
+            </>
           )}
 
           <button type="submit" disabled={isLoading || (!input.trim() && !image)} className="mb-1 p-2 bg-indigo-600 rounded-lg hover:bg-indigo-500 disabled:opacity-50 disabled:bg-slate-700 transition-all text-white shadow-lg">
