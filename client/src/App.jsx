@@ -6,6 +6,7 @@ import OfflineBanner from "./components/OfflineBanner";
 import Spinner from "./components/Spinner";
 import FloatingControls from "./components/FloatingControls"; 
 import CommandPalette from "./components/CommandPalette"; 
+import BookmarkPanel from "./components/BookmarkPanel"; // Day 26
 
 const VoiceSettings = lazy(() => import("./components/VoiceSettings"));
 const PersonaModal = lazy(() => import("./components/PersonaModal"));
@@ -23,7 +24,8 @@ import { usePWA } from "./hooks/usePWA";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"; 
 import { useCommandPalette } from "./hooks/useCommandPalette"; 
 import { useCustomPersonas } from "./hooks/useCustomPersonas"; 
-import { importAppBackup } from "./utils/backupUtils"; // Day 25
+import { useBookmarks } from "./hooks/useBookmarks"; // Day 26
+import { importAppBackup } from "./utils/backupUtils"; 
 import { PERSONAS } from "./data/personas";
 
 function App() {
@@ -36,6 +38,7 @@ function App() {
   const [isPersonaOpen, setIsPersonaOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false); 
+  const [isBookmarksOpen, setIsBookmarksOpen] = useState(false); // Day 26
   
   const [isAutoRead, setIsAutoRead] = useLocalStorage("aethel_autoread", false);
   const [currentPersona, setCurrentPersona] = useLocalStorage("aethel_persona", PERSONAS[0]);
@@ -48,14 +51,16 @@ function App() {
   const { isInstallable, installApp } = usePWA(); 
   const { isPaletteOpen, closePalette, openPalette } = useCommandPalette(); 
   const { customPersonas, addPersona, deletePersona } = useCustomPersonas(); 
+  const { bookmarks, toggleBookmark, isBookmarked, clearBookmarks } = useBookmarks(); // Day 26
 
   useKeyboardShortcuts({
     "n": () => { setActiveChatId(null); success("New conversation"); },
     "s": () => setIsSettingsOpen(true),
     "p": () => setIsPersonaOpen(true),
+    "b": () => setIsBookmarksOpen(prev => !prev),
     "?": () => setIsShortcutsOpen(true),
     "f": () => setIsFocusMode(prev => !prev),
-    "Escape": () => { setIsSettingsOpen(false); setIsPersonaOpen(false); setIsShortcutsOpen(false); setIsSidebarOpen(false); closePalette(); }
+    "Escape": () => { setIsSettingsOpen(false); setIsPersonaOpen(false); setIsShortcutsOpen(false); setIsSidebarOpen(false); closePalette(); setIsBookmarksOpen(false); }
   });
 
   const loadChats = async () => {
@@ -89,15 +94,12 @@ function App() {
     }
   };
 
-  // Day 25: Handle System Restore
   const handleRestoreSystem = async (file) => {
     try {
       await importAppBackup(file);
       success("System Restored! Reloading environment...");
       setTimeout(() => window.location.reload(), 1500);
-    } catch (err) {
-      notifyError("Failed to restore backup.");
-    }
+    } catch (err) { notifyError("Failed to restore backup."); }
   };
 
   useEffect(() => { loadChats(); }, [activeChatId]);
@@ -108,6 +110,8 @@ function App() {
       {!isOnline && <OfflineBanner />}
 
       <CommandPalette isOpen={isPaletteOpen} onClose={closePalette} chats={chats} onSelectChat={setActiveChatId} onNewChat={() => { setActiveChatId(null); success("New conversation"); }} onOpenSettings={() => setIsSettingsOpen(true)} onToggleFocus={() => setIsFocusMode(!isFocusMode)} />
+
+      <BookmarkPanel isOpen={isBookmarksOpen} onClose={() => setIsBookmarksOpen(false)} bookmarks={bookmarks} clearBookmarks={clearBookmarks} />
 
       <Suspense fallback={null}>
         <VoiceSettings 
@@ -146,7 +150,7 @@ function App() {
               activeChatId={activeChatId} onChatUpdated={loadChats} speak={speak} stop={stop} isSpeaking={isSpeaking} isAutoRead={isAutoRead}
               systemInstruction={currentPersona.instruction} customPrompt={customPrompt} currentPersona={currentPersona}
               onOpenArtifact={openArtifact} isFocusMode={isFocusMode} onToggleFocus={() => setIsFocusMode(!isFocusMode)}
-              onImportBackup={handleRestoreSystem} // Day 25
+              onImportBackup={handleRestoreSystem} toggleBookmark={toggleBookmark} isBookmarked={isBookmarked} onToggleBookmarks={() => setIsBookmarksOpen(true)}
             />
           </div>
 
