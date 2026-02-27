@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useCodeTheme } from "../hooks/useCodeTheme";
 import { useCodeSettings } from "../hooks/useCodeSettings"; 
 import { getExtension } from "../utils/languageMap";
+import MermaidViewer from "./MermaidViewer"; // Day 27
 
 const themeMap = { oneDark, dracula, materialDark, atomDark };
 
@@ -14,9 +15,12 @@ const CodeBlock = ({ language, value, onOpenArtifact }) => {
   
   const { activeThemeId } = useCodeTheme(); 
   const { showLineNumbers, wordWrap: globalWordWrap } = useCodeSettings(); 
-  
-  // Day 26: Local override for word wrap
   const [localWrap, setLocalWrap] = useState(globalWordWrap);
+
+  // Day 27: Intercept Mermaid Language
+  if (language === 'mermaid') {
+    return <MermaidViewer chart={value} />;
+  }
 
   const lineCount = value.split('\n').length;
   const isLongCode = lineCount > 15;
