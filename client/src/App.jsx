@@ -6,7 +6,7 @@ import OfflineBanner from "./components/OfflineBanner";
 import Spinner from "./components/Spinner";
 import FloatingControls from "./components/FloatingControls"; 
 import CommandPalette from "./components/CommandPalette"; 
-import BookmarkPanel from "./components/BookmarkPanel"; // Day 26
+import BookmarkPanel from "./components/BookmarkPanel"; 
 
 const VoiceSettings = lazy(() => import("./components/VoiceSettings"));
 const PersonaModal = lazy(() => import("./components/PersonaModal"));
@@ -24,21 +24,22 @@ import { usePWA } from "./hooks/usePWA";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"; 
 import { useCommandPalette } from "./hooks/useCommandPalette"; 
 import { useCustomPersonas } from "./hooks/useCustomPersonas"; 
-import { useBookmarks } from "./hooks/useBookmarks"; // Day 26
+import { useBookmarks } from "./hooks/useBookmarks"; 
 import { importAppBackup } from "./utils/backupUtils"; 
 import { PERSONAS } from "./data/personas";
+import { useDesktopSidebar } from "./hooks/useDesktopSidebar"; // Day 27
 
 function App() {
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile
   const [isChatsLoading, setIsChatsLoading] = useState(true);
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPersonaOpen, setIsPersonaOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false); 
-  const [isBookmarksOpen, setIsBookmarksOpen] = useState(false); // Day 26
+  const [isBookmarksOpen, setIsBookmarksOpen] = useState(false); 
   
   const [isAutoRead, setIsAutoRead] = useLocalStorage("aethel_autoread", false);
   const [currentPersona, setCurrentPersona] = useLocalStorage("aethel_persona", PERSONAS[0]);
@@ -51,7 +52,8 @@ function App() {
   const { isInstallable, installApp } = usePWA(); 
   const { isPaletteOpen, closePalette, openPalette } = useCommandPalette(); 
   const { customPersonas, addPersona, deletePersona } = useCustomPersonas(); 
-  const { bookmarks, toggleBookmark, isBookmarked, clearBookmarks } = useBookmarks(); // Day 26
+  const { bookmarks, toggleBookmark, isBookmarked, clearBookmarks } = useBookmarks(); 
+  const { isDesktopSidebarOpen, toggleDesktopSidebar } = useDesktopSidebar(); // Day 27
 
   useKeyboardShortcuts({
     "n": () => { setActiveChatId(null); success("New conversation"); },
@@ -133,7 +135,10 @@ function App() {
         <FloatingControls isFocusMode={isFocusMode} onExitFocus={() => setIsFocusMode(false)} />
         {!isFocusMode && (<button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800/90 backdrop-blur rounded-lg border border-slate-700 shadow-xl text-white"><IoMenu size={20} /></button>)}
 
-        <div className={`${isFocusMode ? "md:-translate-x-full md:w-0" : "md:translate-x-0 md:w-72"} transition-all duration-500 ease-in-out h-full relative z-30`}>
+        <div className={`
+           ${isFocusMode || !isDesktopSidebarOpen ? "md:-translate-x-full md:w-0 md:border-none" : "md:translate-x-0 md:w-72"} 
+           transition-all duration-500 ease-in-out h-full relative z-30
+        `}>
            <Sidebar 
              chats={chats} activeChatId={activeChatId} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} isLoading={isChatsLoading}
              onSelectChat={(id) => { setActiveChatId(id); setIsSidebarOpen(false); }} 
@@ -151,6 +156,7 @@ function App() {
               systemInstruction={currentPersona.instruction} customPrompt={customPrompt} currentPersona={currentPersona}
               onOpenArtifact={openArtifact} isFocusMode={isFocusMode} onToggleFocus={() => setIsFocusMode(!isFocusMode)}
               onImportBackup={handleRestoreSystem} toggleBookmark={toggleBookmark} isBookmarked={isBookmarked} onToggleBookmarks={() => setIsBookmarksOpen(true)}
+              onToggleDesktopSidebar={toggleDesktopSidebar} // Day 27
             />
           </div>
 
