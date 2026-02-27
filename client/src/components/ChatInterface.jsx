@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { sendMessageToAI, fetchChatById } from "../services/api";
-import { IoPerson, IoFlash, IoThumbsUpOutline, IoThumbsDownOutline, IoRefresh, IoPencil, IoCheckmark, IoClose, IoCopyOutline, IoBookmarkOutline, IoBookmark, IoArrowUndoOutline } from "react-icons/io5";
+import { IoPerson, IoFlash, IoThumbsUpOutline, IoThumbsDownOutline, IoRefresh, IoPencil, IoCheckmark, IoClose, IoCopyOutline, IoBookmarkOutline, IoBookmark, IoArrowUndoOutline, IoTimeOutline } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm"; 
 import remarkMath from "remark-math"; 
@@ -18,6 +18,7 @@ import StopButton from "./StopButton";
 import ScrollFab from "./ScrollFab"; 
 import DragOverlay from "./DragOverlay"; 
 import InChatSearch from "./InChatSearch"; 
+import ChatAnalyticsModal from "./ChatAnalyticsModal"; // Day 27
 
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
@@ -26,14 +27,12 @@ import { importChatFromJSON } from "../utils/importUtils";
 import { useDragDrop } from "../hooks/useDragDrop"; 
 import { useSmartScroll } from "../hooks/useSmartScroll"; 
 import { useChatSearch } from "../hooks/useChatSearch"; 
-import { useInputDraft } from "../hooks/useInputDraft"; // Day 26
+import { useInputDraft } from "../hooks/useInputDraft"; 
+import { getReadTime, generateChatAnalytics } from "../utils/analyticsUtils"; // Day 27
 
-const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus, onImportBackup, toggleBookmark, isBookmarked, onToggleBookmarks }) => {
+const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus, onImportBackup, toggleBookmark, isBookmarked, onToggleBookmarks, onToggleDesktopSidebar }) => {
   const [messages, setMessages] = useState([]);
-  
-  // Day 26: Swap raw state for persistent Draft State
   const [input, setInput] = useInputDraft(activeChatId);
-
   const [image, setImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [readingMsgId, setReadingMsgId] = useState(null);
@@ -43,6 +42,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const [editingMsgId, setEditingMsgId] = useState(null);
   const [editText, setEditText] = useState("");
   const [lightboxSrc, setLightboxSrc] = useState(null);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false); // Day 27
 
   const { error: notifyError, success } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
@@ -109,12 +109,10 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     } catch (err) { notifyError("Failed to import chat."); }
   };
 
-  // Day 26: Quote Message logic
   const handleQuote = (content) => {
     const snippet = content.length > 150 ? content.substring(0, 150) + "..." : content;
     const quote = `\n> ${snippet.replace(/\n/g, '\n> ')}\n\n`;
-    setInput(prev => prev + quote);
-    success("Quoted in input!");
+    setInput(prev => prev + quote); success("Quoted in input!");
   };
 
   const submitEdit = async (index) => {
@@ -139,7 +137,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
     const userMessage = messages[lastUserIndex];
     const newHistory = messages.slice(0, lastUserIndex + 1); 
-    
     setMessages(newHistory); setIsLoading(true); stop();
 
     try {
@@ -158,8 +155,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     setMessages((prev) => [...prev, userMessage]);
     
     const textToSend = input; const imageToSend = image;
-    setInput(""); // Clears draft via hook
-    setImage(null); setIsLoading(true);
+    setInput(""); setImage(null); setIsLoading(true);
 
     try {
       const response = await sendMessageToAI(textToSend, messages, activeChatId, imageToSend, finalSystemInstruction);
@@ -173,13 +169,16 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   );
 
   const displayedMessages = searchQuery ? messages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase())) : messages;
+  const currentMetrics = generateChatAnalytics(messages);
 
   return (
     <div className={`flex flex-col h-full bg-slate-950 text-slate-100 relative w-full chat-container ${focusedMsgId !== null ? 'has-focus' : ''}`}>
       <DragOverlay isDragging={isDragging} /> 
 
-      <ChatHeader currentPersona={currentPersona} onExportMarkdown={handleExportMarkdown} onExportJSON={handleExportJSON} onCopyAll={handleCopyAll} onImportJSON={handleImportJSON} onImportBackup={onImportBackup} isFocusMode={isFocusMode} onToggleFocus={onToggleFocus} hasCustomPrompt={!!customPrompt} onToggleSearch={toggleSearch} isSearchOpen={isSearchOpen} onToggleBookmarks={onToggleBookmarks} />
+      <ChatHeader currentPersona={currentPersona} onExportMarkdown={handleExportMarkdown} onExportJSON={handleExportJSON} onCopyAll={handleCopyAll} onImportJSON={handleImportJSON} onImportBackup={onImportBackup} onOpenAnalytics={() => setIsAnalyticsOpen(true)} isFocusMode={isFocusMode} onToggleFocus={onToggleFocus} hasCustomPrompt={!!customPrompt} onToggleSearch={toggleSearch} isSearchOpen={isSearchOpen} onToggleBookmarks={onToggleBookmarks} onToggleDesktopSidebar={onToggleDesktopSidebar} />
       
+      <ChatAnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} metrics={currentMetrics} />
+
       <InChatSearch isOpen={isSearchOpen} query={searchQuery} setQuery={setSearchQuery} onClose={toggleSearch} matchCount={displayedMessages.length} />
 
       {!isFocusMode && (<div className="relative w-full z-10 transition-all duration-500"><ContextBar messages={messages} /></div>)}
@@ -238,20 +237,19 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                  {msg.role === "user" && !isLoading && !searchQuery && (<button onClick={(e) => { e.stopPropagation(); setEditingMsgId(rawIndex); setEditText(msg.content); }} className="absolute -left-8 top-2 p-1.5 text-slate-500 hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/50 rounded-full"><IoPencil size={14} /></button>)}
 
                  <div className="flex justify-between items-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity select-none">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
                       <button onClick={(e) => { e.stopPropagation(); handleCopyMessage(msg.content); }} className="text-[10px] text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-1" title="Copy"><IoCopyOutline /></button>
-                      
-                      {/* Day 26: Quote & Bookmark Controls */}
-                      <button onClick={(e) => { e.stopPropagation(); handleQuote(msg.content); }} className="text-[10px] text-slate-500 hover:text-blue-400 transition-colors flex items-center gap-1 ml-1" title="Quote Message"><IoArrowUndoOutline /></button>
-                      <button onClick={(e) => { e.stopPropagation(); toggleBookmark(msg, activeChatId); }} className={`text-[10px] transition-colors flex items-center gap-1 ml-1 ${isBookmarked(msg, activeChatId) ? 'text-amber-400' : 'text-slate-500 hover:text-amber-400'}`} title="Bookmark">
-                        {isBookmarked(msg, activeChatId) ? <IoBookmark /> : <IoBookmarkOutline />}
-                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); handleQuote(msg.content); }} className="text-[10px] text-slate-500 hover:text-blue-400 transition-colors flex items-center gap-1 ml-1" title="Quote"><IoArrowUndoOutline /></button>
+                      <button onClick={(e) => { e.stopPropagation(); toggleBookmark(msg, activeChatId); }} className={`text-[10px] transition-colors flex items-center gap-1 ml-1 ${isBookmarked(msg, activeChatId) ? 'text-amber-400' : 'text-slate-500 hover:text-amber-400'}`} title="Bookmark">{isBookmarked(msg, activeChatId) ? <IoBookmark /> : <IoBookmarkOutline />}</button>
 
                       {msg.role === "model" && !isLoading && !searchQuery && (
                           <><button className="text-[10px] text-slate-500 hover:text-green-400 ml-2"><IoThumbsUpOutline /></button><button className="text-[10px] text-slate-500 hover:text-red-400"><IoThumbsDownOutline /></button>{rawIndex === messages.length - 1 && (<button onClick={handleRegenerate} className="text-[10px] flex items-center gap-1 text-slate-500 hover:text-indigo-400 ml-2 border border-slate-700 hover:border-indigo-500 px-1.5 rounded transition-all"><IoRefresh /> <span className="hidden sm:inline">Regenerate</span></button>)}</>
                       )}
                     </div>
-                    <div className="text-[10px] text-slate-600 font-mono">{formatTime(msg.createdAt)}</div>
+                    <div className="text-[10px] text-slate-600 font-mono flex items-center gap-2">
+                       {msg.role === 'model' && <span className="flex items-center gap-1"><IoTimeOutline /> {getReadTime(msg.content)}</span>}
+                       <span>{formatTime(msg.createdAt)}</span>
+                    </div>
                  </div>
               </div>
             )}
