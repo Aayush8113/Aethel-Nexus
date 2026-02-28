@@ -13,7 +13,8 @@ const PersonaModal = lazy(() => import("./components/PersonaModal"));
 const ArtifactPanel = lazy(() => import("./components/ArtifactPanel"));
 const ShortcutsModal = lazy(() => import("./components/ShortcutsModal"));
 
-import { fetchAllChats, deleteChat, togglePinChat, deleteAllChats } from "./services/api";
+// Day 28: Imported updateChatTitle
+import { fetchAllChats, deleteChat, togglePinChat, deleteAllChats, updateChatTitle } from "./services/api";
 import { IoMenu } from "react-icons/io5";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { useNotify } from "./hooks/useNotify";
@@ -27,12 +28,12 @@ import { useCustomPersonas } from "./hooks/useCustomPersonas";
 import { useBookmarks } from "./hooks/useBookmarks"; 
 import { importAppBackup } from "./utils/backupUtils"; 
 import { PERSONAS } from "./data/personas";
-import { useDesktopSidebar } from "./hooks/useDesktopSidebar"; // Day 27
+import { useDesktopSidebar } from "./hooks/useDesktopSidebar"; 
 
 function App() {
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
   const [isChatsLoading, setIsChatsLoading] = useState(true);
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -53,7 +54,7 @@ function App() {
   const { isPaletteOpen, closePalette, openPalette } = useCommandPalette(); 
   const { customPersonas, addPersona, deletePersona } = useCustomPersonas(); 
   const { bookmarks, toggleBookmark, isBookmarked, clearBookmarks } = useBookmarks(); 
-  const { isDesktopSidebarOpen, toggleDesktopSidebar } = useDesktopSidebar(); // Day 27
+  const { isDesktopSidebarOpen, toggleDesktopSidebar } = useDesktopSidebar(); 
 
   useKeyboardShortcuts({
     "n": () => { setActiveChatId(null); success("New conversation"); },
@@ -96,6 +97,19 @@ function App() {
     }
   };
 
+  // Day 28: Inline Chat Rename Hookup
+  const handleRenameChat = async (id, newTitle) => {
+    try {
+      const updatedChat = await updateChatTitle(id, newTitle);
+      if (updatedChat) {
+         setChats(prev => prev.map(chat => chat._id === id ? { ...chat, title: updatedChat.title } : chat));
+         success("Chat renamed");
+      }
+    } catch (err) {
+      notifyError("Failed to rename chat");
+    }
+  };
+
   const handleRestoreSystem = async (file) => {
     try {
       await importAppBackup(file);
@@ -133,34 +147,32 @@ function App() {
 
       <div className="flex flex-1 overflow-hidden relative">
         <FloatingControls isFocusMode={isFocusMode} onExitFocus={() => setIsFocusMode(false)} />
-        {!isFocusMode && (<button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800/90 backdrop-blur rounded-lg border border-slate-700 shadow-xl text-white"><IoMenu size={20} /></button>)}
+        {!isFocusMode && (<button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800/90 backdrop-blur rounded-lg border border-slate-700 shadow-xl text-white print:hidden"><IoMenu size={20} /></button>)}
 
-        <div className={`
-           ${isFocusMode || !isDesktopSidebarOpen ? "md:-translate-x-full md:w-0 md:border-none" : "md:translate-x-0 md:w-72"} 
-           transition-all duration-500 ease-in-out h-full relative z-30
-        `}>
+        <div className={`${isFocusMode || !isDesktopSidebarOpen ? "md:-translate-x-full md:w-0 md:border-none" : "md:translate-x-0 md:w-72"} transition-all duration-500 ease-in-out h-full relative z-30 print:hidden`}>
            <Sidebar 
              chats={chats} activeChatId={activeChatId} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} isLoading={isChatsLoading}
              onSelectChat={(id) => { setActiveChatId(id); setIsSidebarOpen(false); }} 
              onNewChat={() => { setActiveChatId(null); setIsSidebarOpen(false); success("New conversation"); }}
              onDeleteChat={handleDeleteChat} onTogglePin={handleTogglePin} onClearAll={handleClearAll}
+             onRenameChat={handleRenameChat} // Day 28
              onOpenSettings={() => setIsSettingsOpen(true)} onOpenPersonas={() => setIsPersonaOpen(true)}
              isInstallable={isInstallable} installApp={installApp}
            />
         </div>
 
         <div className="flex-1 relative h-full flex transition-all duration-300 overflow-hidden bg-slate-950">
-          <div className={`relative h-full flex flex-col transition-all duration-500 ease-in-out ${isArtifactOpen ? "hidden lg:flex w-full lg:w-1/2 border-r border-slate-800" : "w-full"}`}>
+          <div className={`relative h-full flex flex-col transition-all duration-500 ease-in-out ${isArtifactOpen ? "hidden lg:flex w-full lg:w-1/2 border-r border-slate-800 print:w-full print:border-none" : "w-full"}`}>
             <ChatInterface 
               activeChatId={activeChatId} onChatUpdated={loadChats} speak={speak} stop={stop} isSpeaking={isSpeaking} isAutoRead={isAutoRead}
               systemInstruction={currentPersona.instruction} customPrompt={customPrompt} currentPersona={currentPersona}
               onOpenArtifact={openArtifact} isFocusMode={isFocusMode} onToggleFocus={() => setIsFocusMode(!isFocusMode)}
               onImportBackup={handleRestoreSystem} toggleBookmark={toggleBookmark} isBookmarked={isBookmarked} onToggleBookmarks={() => setIsBookmarksOpen(true)}
-              onToggleDesktopSidebar={toggleDesktopSidebar} // Day 27
+              onToggleDesktopSidebar={toggleDesktopSidebar} 
             />
           </div>
 
-          <div className={`bg-slate-900 shadow-2xl transition-all duration-500 ease-in-out ${isArtifactOpen ? "fixed inset-0 z-40 lg:static lg:z-0 w-full lg:w-1/2 translate-x-0 opacity-100" : "fixed right-0 w-0 opacity-0 translate-x-full lg:static lg:w-0 overflow-hidden"}`}>
+          <div className={`bg-slate-900 shadow-2xl transition-all duration-500 ease-in-out print:hidden ${isArtifactOpen ? "fixed inset-0 z-40 lg:static lg:z-0 w-full lg:w-1/2 translate-x-0 opacity-100" : "fixed right-0 w-0 opacity-0 translate-x-full lg:static lg:w-0 overflow-hidden"}`}>
              {isArtifactOpen && (<Suspense fallback={<div className="h-full flex items-center justify-center"><Spinner /></div>}><ArtifactPanel isOpen={isArtifactOpen} onClose={closeArtifact} code={activeCode} language={activeLanguage} onChange={setActiveCode} /></Suspense>)}
           </div>
         </div>
