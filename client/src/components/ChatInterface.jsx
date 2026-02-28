@@ -18,7 +18,7 @@ import StopButton from "./StopButton";
 import ScrollFab from "./ScrollFab"; 
 import DragOverlay from "./DragOverlay"; 
 import InChatSearch from "./InChatSearch"; 
-import ChatAnalyticsModal from "./ChatAnalyticsModal"; // Day 27
+import ChatAnalyticsModal from "./ChatAnalyticsModal"; 
 
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
@@ -28,7 +28,7 @@ import { useDragDrop } from "../hooks/useDragDrop";
 import { useSmartScroll } from "../hooks/useSmartScroll"; 
 import { useChatSearch } from "../hooks/useChatSearch"; 
 import { useInputDraft } from "../hooks/useInputDraft"; 
-import { getReadTime, generateChatAnalytics } from "../utils/analyticsUtils"; // Day 27
+import { getReadTime, generateChatAnalytics } from "../utils/analyticsUtils"; 
 
 const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus, onImportBackup, toggleBookmark, isBookmarked, onToggleBookmarks, onToggleDesktopSidebar }) => {
   const [messages, setMessages] = useState([]);
@@ -42,7 +42,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const [editingMsgId, setEditingMsgId] = useState(null);
   const [editText, setEditText] = useState("");
   const [lightboxSrc, setLightboxSrc] = useState(null);
-  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false); // Day 27
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false); 
 
   const { error: notifyError, success } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
@@ -50,15 +50,27 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const { containerRef, messagesEndRef, isAutoScrollEnabled, showScrollBottom, showScrollTop, handleScroll, scrollToBottom, scrollToTop } = useSmartScroll([messages, isLoading]);
   const { isSearchOpen, searchQuery, setSearchQuery, toggleSearch } = useChatSearch();
 
+  const prevMsgLength = useRef(messages.length);
+  const [hasUnread, setHasUnread] = useState(false);
+
   const formatTime = (date) => new Date(date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const finalSystemInstruction = customPrompt ? `${systemInstruction}\n\nUSER OVERRIDE RULES:\n${customPrompt}` : systemInstruction;
 
   useEffect(() => {
-    if (droppedImage) { setImage(droppedImage); clearDroppedFiles(); success("Image attached!"); }
-    if (droppedText) {
-      const codeBlock = `\n\n\`\`\`${droppedText.ext}\n// File: ${droppedText.name}\n${droppedText.content}\n\`\`\`\n`;
-      setInput(prev => prev + codeBlock); clearDroppedFiles(); success(`Parsed ${droppedText.name}`);
+    if (messages.length > prevMsgLength.current && !isAutoScrollEnabled) {
+       setHasUnread(true);
     }
+    prevMsgLength.current = messages.length;
+  }, [messages.length, isAutoScrollEnabled]);
+
+  const handleScrollToBottom = (force) => {
+    scrollToBottom(force);
+    setHasUnread(false);
+  };
+
+  useEffect(() => {
+    if (droppedImage) { setImage(droppedImage); clearDroppedFiles(); success("Image attached!"); }
+    if (droppedText) { setInput(prev => prev + `\n\n\`\`\`${droppedText.ext}\n// File: ${droppedText.name}\n${droppedText.content}\n\`\`\`\n`); clearDroppedFiles(); success(`Parsed ${droppedText.name}`); }
   }, [droppedImage, droppedText, clearDroppedFiles, success, setInput]);
 
   useEffect(() => {
@@ -80,6 +92,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       } else {
         setMessages([{ role: "model", content: `Hello! I am **${currentPersona.name}**.  \nReady to solve complex problems. What are we building?`, createdAt: Date.now() }]);
       }
+      setHasUnread(false);
     };
     loadChat();
   }, [activeChatId, currentPersona]);
@@ -103,25 +116,17 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const handleCopyMessage = (content) => { navigator.clipboard.writeText(content); success("Message copied!"); };
 
   const handleImportJSON = async (file) => {
-    try {
-      const importedMessages = await importChatFromJSON(file);
-      setMessages(importedMessages); success("Chat imported successfully! (Unsaved)");
-    } catch (err) { notifyError("Failed to import chat."); }
+    try { const importedMessages = await importChatFromJSON(file); setMessages(importedMessages); success("Chat imported successfully!"); } 
+    catch (err) { notifyError("Failed to import chat. Invalid format."); }
   };
 
-  const handleQuote = (content) => {
-    const snippet = content.length > 150 ? content.substring(0, 150) + "..." : content;
-    const quote = `\n> ${snippet.replace(/\n/g, '\n> ')}\n\n`;
-    setInput(prev => prev + quote); success("Quoted in input!");
-  };
+  const handleQuote = (content) => { setInput(prev => prev + `\n> ${content.length > 150 ? content.substring(0, 150) + "..." : content}\n\n`); success("Quoted in input!"); };
 
   const submitEdit = async (index) => {
     if (!editText.trim()) return;
     const newHistory = messages.slice(0, index);
-    const newMessage = { role: "user", content: editText, createdAt: Date.now() };
-    setMessages([...newHistory, newMessage]);
+    setMessages([...newHistory, { role: "user", content: editText, createdAt: Date.now() }]);
     setEditingMsgId(null); setIsLoading(true);
-
     try {
       const response = await sendMessageToAI(editText, newHistory, activeChatId, null, finalSystemInstruction);
       setMessages(prev => [...prev, { role: "model", content: response.reply, createdAt: Date.now() }]);
@@ -134,11 +139,9 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     let lastUserIndex = -1;
     for (let i = messages.length - 1; i >= 0; i--) { if (messages[i].role === 'user') { lastUserIndex = i; break; } }
     if (lastUserIndex === -1) return; 
-
     const userMessage = messages[lastUserIndex];
     const newHistory = messages.slice(0, lastUserIndex + 1); 
     setMessages(newHistory); setIsLoading(true); stop();
-
     try {
       const response = await sendMessageToAI(userMessage.content, newHistory.slice(0, -1), activeChatId, userMessage.image, finalSystemInstruction);
       setMessages([...newHistory, { role: "model", content: response.reply, createdAt: Date.now() }]);
@@ -149,14 +152,10 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const handleSend = async (e) => {
     e?.preventDefault();
     if ((!input.trim() && !image) || isLoading) return;
-
     stop(); 
-    const userMessage = { role: "user", content: input, image: image ? URL.createObjectURL(image) : null, createdAt: Date.now() };
-    setMessages((prev) => [...prev, userMessage]);
-    
+    setMessages((prev) => [...prev, { role: "user", content: input, image: image ? URL.createObjectURL(image) : null, createdAt: Date.now() }]);
     const textToSend = input; const imageToSend = image;
     setInput(""); setImage(null); setIsLoading(true);
-
     try {
       const response = await sendMessageToAI(textToSend, messages, activeChatId, imageToSend, finalSystemInstruction);
       setMessages((prev) => [...prev, { role: "model", content: response.reply, createdAt: Date.now() }]);
@@ -178,14 +177,14 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       <ChatHeader currentPersona={currentPersona} onExportMarkdown={handleExportMarkdown} onExportJSON={handleExportJSON} onCopyAll={handleCopyAll} onImportJSON={handleImportJSON} onImportBackup={onImportBackup} onOpenAnalytics={() => setIsAnalyticsOpen(true)} isFocusMode={isFocusMode} onToggleFocus={onToggleFocus} hasCustomPrompt={!!customPrompt} onToggleSearch={toggleSearch} isSearchOpen={isSearchOpen} onToggleBookmarks={onToggleBookmarks} onToggleDesktopSidebar={onToggleDesktopSidebar} />
       
       <ChatAnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} metrics={currentMetrics} />
-
       <InChatSearch isOpen={isSearchOpen} query={searchQuery} setQuery={setSearchQuery} onClose={toggleSearch} matchCount={displayedMessages.length} />
 
-      {!isFocusMode && (<div className="relative w-full z-10 transition-all duration-500"><ContextBar messages={messages} /></div>)}
+      {!isFocusMode && (<div className="relative w-full z-10 transition-all duration-500 print:hidden"><ContextBar messages={messages} /></div>)}
 
       <Lightbox src={lightboxSrc} isOpen={!!lightboxSrc} onClose={() => setLightboxSrc(null)} />
       <StopButton isGenerating={isLoading} onStop={() => { setIsLoading(false); stop(); }} />
-      <ScrollFab showBottom={showScrollBottom} showTop={showScrollTop} onScrollToBottom={scrollToBottom} onScrollToTop={scrollToTop} isAutoScrollPaused={!isAutoScrollEnabled} isLoading={isLoading} />
+      
+      <ScrollFab showBottom={showScrollBottom} showTop={showScrollTop} onScrollToBottom={() => handleScrollToBottom(true)} onScrollToTop={scrollToTop} isAutoScrollPaused={!isAutoScrollEnabled} isLoading={isLoading} hasUnread={hasUnread} />
 
       <div ref={containerRef} className={`flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth w-full ${isFocusMode ? "pt-4" : isSearchOpen ? "pt-24" : "pt-16"} transition-all duration-500`} onScroll={handleScrollEvent}>
         {displayedMessages.map((msg, index) => {
@@ -195,14 +194,14 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
           return (
           <div key={rawIndex} className={`message-bubble flex gap-4 animate-fade-in ${msg.role === "user" ? "justify-end" : "justify-start"} ${focusedMsgId === rawIndex ? "is-focused" : ""}`} onDoubleClick={(e) => { e.stopPropagation(); setFocusedMsgId(focusedMsgId === rawIndex ? null : rawIndex); }}>
             {msg.role === "model" && (
-              <div className="flex flex-col items-center gap-1 mt-1">
+              <div className="flex flex-col items-center gap-1 mt-1 print:hidden">
                 <div className={`w-8 h-8 rounded-lg bg-indigo-600 flex-shrink-0 flex items-center justify-center shadow-lg ${readingMsgId === rawIndex && isSpeaking ? "animate-speaking" : ""}`}><IoFlash className="text-white text-sm" /></div>
                 <SpeakerButton isActive={readingMsgId === rawIndex && isSpeaking} onClick={() => { if (readingMsgId === rawIndex && isSpeaking) { stop(); setReadingMsgId(null); } else { speak(msg.content); setReadingMsgId(rawIndex); } }} />
               </div>
             )}
             
             {msg.role === "user" && editingMsgId === rawIndex ? (
-              <div className="w-full max-w-[85%] flex flex-col items-end gap-2 animate-fade-in" onClick={e => e.stopPropagation()}>
+              <div className="w-full max-w-[85%] flex flex-col items-end gap-2 animate-fade-in print:hidden" onClick={e => e.stopPropagation()}>
                 <textarea value={editText} onChange={(e) => setEditText(e.target.value)} className="w-full bg-slate-800 text-white p-3 rounded-xl border border-indigo-500 focus:outline-none resize-none shadow-xl" rows={3} autoFocus />
                 <div className="flex gap-2">
                   <button onClick={() => setEditingMsgId(null)} className="px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:bg-slate-800 flex items-center gap-1"><IoClose /> Cancel</button>
@@ -234,9 +233,9 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                   )}
                 </div>
 
-                 {msg.role === "user" && !isLoading && !searchQuery && (<button onClick={(e) => { e.stopPropagation(); setEditingMsgId(rawIndex); setEditText(msg.content); }} className="absolute -left-8 top-2 p-1.5 text-slate-500 hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/50 rounded-full"><IoPencil size={14} /></button>)}
+                 {msg.role === "user" && !isLoading && !searchQuery && (<button onClick={(e) => { e.stopPropagation(); setEditingMsgId(rawIndex); setEditText(msg.content); }} className="absolute -left-8 top-2 p-1.5 text-slate-500 hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/50 rounded-full print:hidden"><IoPencil size={14} /></button>)}
 
-                 <div className="flex justify-between items-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity select-none">
+                 <div className="flex justify-between items-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity select-none print:hidden">
                     <div className="flex gap-2 items-center">
                       <button onClick={(e) => { e.stopPropagation(); handleCopyMessage(msg.content); }} className="text-[10px] text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-1" title="Copy"><IoCopyOutline /></button>
                       <button onClick={(e) => { e.stopPropagation(); handleQuote(msg.content); }} className="text-[10px] text-slate-500 hover:text-blue-400 transition-colors flex items-center gap-1 ml-1" title="Quote"><IoArrowUndoOutline /></button>
@@ -253,22 +252,22 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                  </div>
               </div>
             )}
-            {msg.role === "user" && (<div className="w-8 h-8 rounded-lg bg-slate-700 flex-shrink-0 flex items-center justify-center mt-1"><IoPerson className="text-slate-400 text-sm" /></div>)}
+            {msg.role === "user" && (<div className="w-8 h-8 rounded-lg bg-slate-700 flex-shrink-0 flex items-center justify-center mt-1 print:hidden"><IoPerson className="text-slate-400 text-sm" /></div>)}
           </div>
         )})}
 
         {isLoading && (
-          <div className="flex gap-4 justify-start animate-fade-in"><div className="w-8 h-8 rounded-lg bg-indigo-600 flex-shrink-0 flex items-center justify-center mt-1"><IoFlash className="text-white text-sm animate-pulse" /></div><TypingIndicator /></div>
+          <div className="flex gap-4 justify-start animate-fade-in print:hidden"><div className="w-8 h-8 rounded-lg bg-indigo-600 flex-shrink-0 flex items-center justify-center mt-1"><IoFlash className="text-white text-sm animate-pulse" /></div><TypingIndicator /></div>
         )}
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      <div className={`p-4 md:p-6 bg-slate-950/80 backdrop-blur-md border-t border-slate-800 sticky bottom-0 z-10 w-full transition-all duration-500 ${isFocusMode || isSearchOpen ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
+      <div className={`p-4 md:p-6 bg-slate-950/80 backdrop-blur-md border-t border-slate-800 sticky bottom-0 z-10 w-full transition-all duration-500 print:hidden ${isFocusMode || isSearchOpen ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
         <ThemedInput />
       </div>
 
       {isFocusMode && !isSearchOpen && (
-         <div className="fixed bottom-0 left-0 right-0 p-6 z-40 flex justify-center bg-gradient-to-t from-black via-black/90 to-transparent pt-20 animate-fade-in-up pointer-events-none">
+         <div className="fixed bottom-0 left-0 right-0 p-6 z-40 flex justify-center bg-gradient-to-t from-black via-black/90 to-transparent pt-20 animate-fade-in-up pointer-events-none print:hidden">
             <div className="w-full max-w-3xl pointer-events-auto"><ThemedInput /></div>
          </div>
       )}
