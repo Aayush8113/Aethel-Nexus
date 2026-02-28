@@ -56,6 +56,15 @@ body {
 }
 .animate-pop-in { animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
+/* Bookmark Panel Slide */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* Drag & Drop Fixes */
 .pointer-events-none-children * { pointer-events: none; }
 textarea { -webkit-user-select: text; user-select: text; }
@@ -83,3 +92,61 @@ textarea { -webkit-user-select: text; user-select: text; }
   .message-bubble { background: transparent !important; color: black !important; border: 1px solid #e2e8f0 !important; break-inside: avoid; box-shadow: none !important; margin-bottom: 20px; }
   pre, code { background: #f8fafc !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important; }
 }
+
+/* =========================================
+   Theme: Light Mode Global Inversion
+   ========================================= */
+:root:not(.dark) {
+  --bg-base: #f8fafc;      /* slate-50 */
+  --bg-panel: #ffffff;     /* white */
+  --bg-hover: #f1f5f9;     /* slate-100 */
+  --text-main: #0f172a;    /* slate-900 */
+  --text-muted: #475569;   /* slate-600 */
+  --border-color: #cbd5e1; /* slate-300 */
+}
+
+/* Base Backgrounds */
+:root:not(.dark) body, 
+:root:not(.dark) .chat-container,
+:root:not(.dark) .bg-black,
+:root:not(.dark) .bg-slate-950 { background-color: var(--bg-base) !important; color: var(--text-main) !important; }
+
+/* Panels and Containers */
+:root:not(.dark) .bg-slate-900,
+:root:not(.dark) .bg-slate-800 { background-color: var(--bg-panel) !important; }
+
+/* Hover States */
+:root:not(.dark) .hover\:bg-slate-800:hover,
+:root:not(.dark) .hover\:bg-slate-700:hover { background-color: var(--bg-hover) !important; color: var(--text-main) !important; }
+
+/* Text Colors */
+:root:not(.dark) .text-white,
+:root:not(.dark) .text-slate-200 { color: var(--text-main) !important; }
+
+:root:not(.dark) .text-slate-300,
+:root:not(.dark) .text-slate-400,
+:root:not(.dark) .text-slate-500 { color: var(--text-muted) !important; }
+
+/* Borders */
+:root:not(.dark) .border-slate-800,
+:root:not(.dark) .border-slate-700,
+:root:not(.dark) .border-black\/50 { border-color: var(--border-color) !important; }
+
+/* Specific Chat Bubble Fixes */
+:root:not(.dark) .message-bubble.bg-slate-800 {
+  background-color: var(--bg-panel) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05) !important;
+  color: var(--text-main) !important;
+}
+
+:root:not(.dark) .message-bubble.bg-transparent {
+  background-color: var(--bg-hover) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-main) !important;
+}
+
+/* Translucent Navbars / Sidebars */
+:root:not(.dark) .bg-slate-900\/95 { background-color: rgba(255, 255, 255, 0.95) !important; }
+:root:not(.dark) .bg-slate-950\/80 { background-color: rgba(248, 250, 252, 0.8) !important; }
+:root:not(.dark) textarea { color: var(--text-main) !important; }
