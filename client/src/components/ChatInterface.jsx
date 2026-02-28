@@ -30,7 +30,7 @@ import { useChatSearch } from "../hooks/useChatSearch";
 import { useInputDraft } from "../hooks/useInputDraft"; 
 import { getReadTime, generateChatAnalytics } from "../utils/analyticsUtils"; 
 
-const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus, onImportBackup, toggleBookmark, isBookmarked, onToggleBookmarks, onToggleDesktopSidebar }) => {
+const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus, onImportBackup, toggleBookmark, isBookmarked, onToggleBookmarks, onToggleDesktopSidebar, sttLang }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useInputDraft(activeChatId);
   const [image, setImage] = useState(null);
@@ -45,7 +45,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false); 
 
   const { error: notifyError, success } = useNotify();
-  const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition();
+  const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition(sttLang);
   const { isDragging, droppedImage, droppedText, clearDroppedFiles } = useDragDrop(); 
   const { containerRef, messagesEndRef, isAutoScrollEnabled, showScrollBottom, showScrollTop, handleScroll, scrollToBottom, scrollToTop } = useSmartScroll([messages, isLoading]);
   const { isSearchOpen, searchQuery, setSearchQuery, toggleSearch } = useChatSearch();
