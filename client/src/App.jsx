@@ -28,7 +28,10 @@ import { useBookmarks } from "./hooks/useBookmarks";
 import { importAppBackup } from "./utils/backupUtils"; 
 import { PERSONAS } from "./data/personas";
 import { useDesktopSidebar } from "./hooks/useDesktopSidebar"; 
-import { useAppTheme } from "./hooks/useAppTheme"; // <-- NEW IMPORT
+import { useAppTheme } from "./hooks/useAppTheme"; 
+
+// NEW IMPORT
+import { useSpeechRecognition } from "./hooks/useSpeechRecognition";
 
 function App() {
   const [chats, setChats] = useState([]);
@@ -46,6 +49,9 @@ function App() {
   const [currentPersona, setCurrentPersona] = useLocalStorage("aethel_persona", PERSONAS[0]);
   const [customPrompt, setCustomPrompt] = useLocalStorage("aethel_custom_prompt", ""); 
   
+  // NEW: Save the microphone language choice
+  const [sttLang, setSttLang] = useLocalStorage("aethel_stt_lang", "en-US");
+
   const isOnline = useOnlineStatus();
   const { success, error: notifyError } = useNotify();
   const { voices, activeVoice, setActiveVoice, speak, stop, isSpeaking, rate, setRate, pitch, setPitch } = useTextToSpeech(); 
@@ -55,7 +61,7 @@ function App() {
   const { customPersonas, addPersona, deletePersona } = useCustomPersonas(); 
   const { bookmarks, toggleBookmark, isBookmarked, clearBookmarks } = useBookmarks(); 
   const { isDesktopSidebarOpen, toggleDesktopSidebar } = useDesktopSidebar(); 
-  const { appTheme, setAppTheme } = useAppTheme(); // <-- NEW HOOK INIT
+  const { appTheme, setAppTheme } = useAppTheme(); 
 
   useKeyboardShortcuts({
     "n": () => { setActiveChatId(null); success("New conversation"); },
@@ -134,7 +140,8 @@ function App() {
           isAutoRead={isAutoRead} onToggleAutoRead={() => setIsAutoRead(!isAutoRead)} 
           customPrompt={customPrompt} setCustomPrompt={setCustomPrompt}
           ttsRate={rate} setTtsRate={setRate} ttsPitch={pitch} setTtsPitch={setPitch}
-          appTheme={appTheme} setAppTheme={setAppTheme} // <-- PASSED DOWN TO SETTINGS
+          appTheme={appTheme} setAppTheme={setAppTheme} 
+          sttLang={sttLang} setSttLang={setSttLang} // <-- PASSED DOWN
         />
         <PersonaModal 
           isOpen={isPersonaOpen} onClose={() => setIsPersonaOpen(false)} 
@@ -166,12 +173,14 @@ function App() {
 
         <div className="flex-1 relative h-full flex transition-all duration-300 overflow-hidden bg-slate-950">
           <div className={`relative h-full flex flex-col transition-all duration-500 ease-in-out ${isArtifactOpen ? "hidden lg:flex w-full lg:w-1/2 border-r border-slate-800 print:w-full print:border-none" : "w-full"}`}>
+            
+            {/* Added sttLang to ChatInterface so the microphone knows what language to use */}
             <ChatInterface 
               activeChatId={activeChatId} onChatUpdated={loadChats} speak={speak} stop={stop} isSpeaking={isSpeaking} isAutoRead={isAutoRead}
               systemInstruction={currentPersona.instruction} customPrompt={customPrompt} currentPersona={currentPersona}
               onOpenArtifact={openArtifact} isFocusMode={isFocusMode} onToggleFocus={() => setIsFocusMode(!isFocusMode)}
               onImportBackup={handleRestoreSystem} toggleBookmark={toggleBookmark} isBookmarked={isBookmarked} onToggleBookmarks={() => setIsBookmarksOpen(true)}
-              onToggleDesktopSidebar={toggleDesktopSidebar} 
+              onToggleDesktopSidebar={toggleDesktopSidebar} sttLang={sttLang} 
             />
           </div>
 
