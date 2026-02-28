@@ -4,19 +4,13 @@ export const useInputDraft = (chatId) => {
   const key = `aethel_draft_${chatId || 'new_chat'}`;
   
   const [draft, setDraft] = useState(() => {
-    try { return localStorage.getItem(key) || ""; } 
-    catch { return ""; }
+    try { return localStorage.getItem(key) || ""; } catch { return ""; }
   });
 
-  // Load draft when chat changes
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(key) || "";
-      setDraft(saved);
-    } catch { setDraft(""); }
+    try { setDraft(localStorage.getItem(key) || ""); } catch { setDraft(""); }
   }, [chatId, key]);
 
-  // Save draft on change
   const updateDraft = (val) => {
     setDraft(val);
     try {
