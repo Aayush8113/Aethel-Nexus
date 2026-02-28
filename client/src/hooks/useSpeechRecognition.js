@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 
-// Passed sttLang as a prop so it can switch between English, Gujarati, Hindi, etc.
 export const useSpeechRecognition = (sttLang = 'en-US') => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -11,10 +10,11 @@ export const useSpeechRecognition = (sttLang = 'en-US') => {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const rec = new SpeechRecognition();
       
-      rec.continuous = true; 
+      // Changed back to FALSE: It will automatically stop when you stop speaking.
+      rec.continuous = false; 
       rec.interimResults = false;
       
-      // Update the language dynamically based on user settings
+      // Uses the language selected in your settings (e.g., 'gu-IN' for Gujarati)
       rec.lang = sttLang; 
 
       rec.onresult = (event) => {
@@ -40,7 +40,7 @@ export const useSpeechRecognition = (sttLang = 'en-US') => {
 
       setRecognition(rec);
     }
-  }, [sttLang]); // Re-initialize if language changes
+  }, [sttLang]); 
 
   const startListening = useCallback(() => {
     if (recognition) {
