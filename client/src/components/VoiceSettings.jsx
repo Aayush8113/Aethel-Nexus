@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useCodeTheme } from "../hooks/useCodeTheme";
 import { useCodeSettings } from "../hooks/useCodeSettings";
 
-const VoiceSettings = ({ isOpen, onClose, voices, activeVoice, onVoiceChange, isAutoRead, onToggleAutoRead, customPrompt, setCustomPrompt, ttsRate, setTtsRate, ttsPitch, setTtsPitch, appTheme, setAppTheme }) => {
+const VoiceSettings = ({ isOpen, onClose, voices, activeVoice, onVoiceChange, isAutoRead, onToggleAutoRead, customPrompt, setCustomPrompt, ttsRate, setTtsRate, ttsPitch, setTtsPitch, appTheme, setAppTheme, sttLang, setSttLang }) => {
   const [activeTab, setActiveTab] = useState("prefs");
   const { themes, activeThemeId, setActiveThemeId } = useCodeTheme();
   const { showLineNumbers, setShowLineNumbers, wordWrap, setWordWrap } = useCodeSettings();
@@ -58,25 +58,35 @@ const VoiceSettings = ({ isOpen, onClose, voices, activeVoice, onVoiceChange, is
                 <div><p className="font-bold text-sm text-white">Line Numbers</p></div>
                 <button onClick={() => setShowLineNumbers(!showLineNumbers)} className={`w-12 h-6 rounded-full p-1 transition-colors ${showLineNumbers ? "bg-indigo-600" : "bg-slate-600"}`}><div className={`w-4 h-4 rounded-full bg-white transform transition-transform ${showLineNumbers ? "translate-x-6" : "translate-x-0"}`} /></button>
               </div>
-              <div className="flex items-center justify-between p-3 bg-slate-800 rounded-xl border border-slate-700">
-                <div><p className="font-bold text-sm text-white">Word Wrap (Chat)</p></div>
-                <button onClick={() => setWordWrap(!wordWrap)} className={`w-12 h-6 rounded-full p-1 transition-colors ${wordWrap ? "bg-indigo-600" : "bg-slate-600"}`}><div className={`w-4 h-4 rounded-full bg-white transform transition-transform ${wordWrap ? "translate-x-6" : "translate-x-0"}`} /></button>
-              </div>
             </div>
 
             {/* Audio Section */}
             <div className="space-y-4">
-              <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Audio & Voice</h3>
+              <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Audio & Languages</h3>
+              
+              {/* Day 28+: Microphone Input Language */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Microphone Language</label>
+                <select value={sttLang} onChange={(e) => setSttLang(e.target.value)} className="w-full bg-slate-800 text-white p-3 rounded-xl border border-slate-700 focus:border-indigo-500 outline-none text-sm appearance-none cursor-pointer">
+                  <option value="en-US">English (US)</option>
+                  <option value="gu-IN">Gujarati (India)</option>
+                  <option value="hi-IN">Hindi (India)</option>
+                </select>
+              </div>
+
               <div className="flex items-center justify-between p-3 bg-slate-800 rounded-xl border border-slate-700">
-                <div><p className="font-bold text-sm text-white">Auto-Read Responses</p><p className="text-xs text-slate-400">Speak AI replies automatically</p></div>
+                <div><p className="font-bold text-sm text-white">Auto-Read Responses</p><p className="text-[10px] text-slate-400">Speak AI replies automatically</p></div>
                 <button onClick={onToggleAutoRead} className={`w-12 h-6 rounded-full p-1 transition-colors ${isAutoRead ? "bg-indigo-600" : "bg-slate-600"}`}><div className={`w-4 h-4 rounded-full bg-white transform transition-transform ${isAutoRead ? "translate-x-6" : "translate-x-0"}`} /></button>
               </div>
+              
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">AI Voice Model</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Default Voice (English)</label>
                 <select value={activeVoice?.name || ""} onChange={(e) => onVoiceChange(voices.find(v => v.name === e.target.value))} className="w-full bg-slate-800 text-white p-3 rounded-xl border border-slate-700 focus:border-indigo-500 outline-none text-sm appearance-none cursor-pointer">
                   {voices.map((voice) => (<option key={voice.name} value={voice.name}>{voice.name} ({voice.lang})</option>))}
                 </select>
+                <p className="text-[9px] text-slate-500 italic mt-1">*If AI replies in Gujarati, voice will auto-switch to local Gujarati TTS.</p>
               </div>
+
               <div className="flex gap-4">
                 <div className="flex-1 space-y-1"><label className="text-xs font-bold text-slate-500 flex justify-between">Speed <span>{ttsRate}x</span></label><input type="range" min="0.5" max="2" step="0.1" value={ttsRate} onChange={(e) => setTtsRate(parseFloat(e.target.value))} className="w-full accent-indigo-500" /></div>
                 <div className="flex-1 space-y-1"><label className="text-xs font-bold text-slate-500 flex justify-between">Pitch <span>{ttsPitch}</span></label><input type="range" min="0" max="2" step="0.1" value={ttsPitch} onChange={(e) => setTtsPitch(parseFloat(e.target.value))} className="w-full accent-indigo-500" /></div>
@@ -97,7 +107,6 @@ const VoiceSettings = ({ isOpen, onClose, voices, activeVoice, onVoiceChange, is
                 <button onClick={handleFactoryReset} className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl font-bold transition-colors text-sm">
                   Factory Reset App
                 </button>
-                <p className="text-[10px] text-slate-500 mt-2 text-center">Clears all history, custom personas, and settings.</p>
              </div>
           </div>
         )}
