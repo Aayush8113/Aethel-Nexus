@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { IoClose, IoCodeSlash, IoCopyOutline, IoDownloadOutline, IoTrashOutline, IoMenuOutline } from "react-icons/io5";
+import { IoClose, IoCodeSlash, IoCopyOutline, IoDownloadOutline, IoTrashOutline, IoMenuOutline, IoAddCircleOutline, IoRemoveCircleOutline } from "react-icons/io5";
 import CodeEditorWindow from "./CodeEditorWindow";
 import { useNotify } from "../hooks/useNotify";
 import { getExtension } from "../utils/languageMap";
+import { useArtifactZoom } from "../hooks/useArtifactZoom"; 
 
 const ArtifactPanel = ({ isOpen, onClose, code, language, onChange }) => {
   const { success } = useNotify();
   const [wordWrap, setWordWrap] = useState("on");
+  const { fontSize, zoomIn, zoomOut } = useArtifactZoom(); 
 
   useEffect(() => {
     const handleEsc = (e) => { if (e.key === "Escape") onClose(); };
@@ -27,32 +29,31 @@ const ArtifactPanel = ({ isOpen, onClose, code, language, onChange }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#1e1e1e] border-l border-slate-700 shadow-2xl animate-fade-in">
-      <div className="flex items-center justify-between p-3 border-b border-black/50 bg-[#252526]">
-        <div className="flex items-center gap-3 text-indigo-400">
+    <div className="h-full flex flex-col bg-[#1e1e1e] border-l border-slate-700 shadow-2xl animate-fade-in print:hidden">
+      <div className="flex items-center justify-between p-3 border-b border-black/50 bg-[#252526] overflow-x-auto custom-scrollbar">
+        <div className="flex items-center gap-3 text-indigo-400 min-w-max">
           <div className="p-1.5 bg-indigo-500/10 rounded-lg"><IoCodeSlash size={18} /></div>
-          <div>
-            <h2 className="font-bold text-white text-sm">Code Artifact</h2>
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider">{language}</p>
-          </div>
+          <div><h2 className="font-bold text-white text-sm">Code Artifact</h2><p className="text-[10px] text-slate-400 uppercase tracking-wider">{language}</p></div>
         </div>
         
-        <div className="flex items-center gap-1">
-          <button onClick={() => setWordWrap(prev => prev === "on" ? "off" : "on")} className={`p-2 rounded-lg transition-colors ${wordWrap === "on" ? "text-indigo-400 bg-indigo-500/10" : "text-slate-400 hover:text-white hover:bg-slate-800"}`} title="Toggle Word Wrap">
-            <IoMenuOutline size={18} />
-          </button>
-          <button onClick={() => onChange("")} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Clear Editor">
-            <IoTrashOutline size={18} />
-          </button>
+        <div className="flex items-center gap-1 min-w-max pl-4">
+          <span className="text-[10px] text-slate-500 font-mono mr-1">{fontSize}px</span>
+          <button onClick={zoomOut} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" title="Zoom Out"><IoRemoveCircleOutline size={16} /></button>
+          <button onClick={zoomIn} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" title="Zoom In"><IoAddCircleOutline size={16} /></button>
+          
+          <div className="w-px h-6 bg-slate-700 mx-1"></div>
+          
+          <button onClick={() => setWordWrap(prev => prev === "on" ? "off" : "on")} className={`p-2 rounded-lg transition-colors ${wordWrap === "on" ? "text-indigo-400 bg-indigo-500/10" : "text-slate-400 hover:text-white hover:bg-slate-800"}`} title="Toggle Word Wrap"><IoMenuOutline size={18} /></button>
+          <button onClick={() => onChange("")} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Clear Editor"><IoTrashOutline size={18} /></button>
           <div className="w-px h-6 bg-slate-700 mx-1"></div>
           <button onClick={handleCopy} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" title="Copy Code"><IoCopyOutline size={18} /></button>
           <button onClick={handleDownload} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" title="Download"><IoDownloadOutline size={18} /></button>
           <div className="w-px h-6 bg-slate-700 mx-1"></div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Close Artifact"><IoClose size={20} /></button>
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Close"><IoClose size={20} /></button>
         </div>
       </div>
       <div className="flex-1 overflow-hidden relative">
-        <CodeEditorWindow code={code} language={language} onChange={onChange} wordWrap={wordWrap} />
+        <CodeEditorWindow code={code} language={language} onChange={onChange} wordWrap={wordWrap} fontSize={fontSize} />
       </div>
     </div>
   );
