@@ -6,13 +6,8 @@ export const useChatSearch = () => {
 
   const toggleSearch = () => {
     setIsSearchOpen(prev => !prev);
-    if (isSearchOpen) setSearchQuery(""); // Clear query when closing
+    if (isSearchOpen) setSearchQuery(""); 
   };
 
-  return {
-    isSearchOpen,
-    searchQuery,
-    setSearchQuery,
-    toggleSearch
-  };
+  return { isSearchOpen, searchQuery, setSearchQuery, toggleSearch };
 };
