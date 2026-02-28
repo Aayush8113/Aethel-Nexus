@@ -1,14 +1,17 @@
 const express = require('express');
-const { generateResponse, getAllChats, getSingleChat, deleteChat, togglePinChat, deleteAllChats } = require('../controllers/chatController');
+const router = express.Router();
+const chatController = require('../controllers/chatController');
 const upload = require('../middleware/upload');
 
-const router = express.Router();
+// Main AI Generation Route (handles text and single image)
+router.post('/chat', upload.single('image'), chatController.handleChat);
 
-router.post('/', upload.single("image"), generateResponse);
-router.get('/', getAllChats);
-router.delete('/all', deleteAllChats); // Must come before /:id
-router.get('/:id', getSingleChat);
-router.delete('/:id', deleteChat);
-router.put('/:id/pin', togglePinChat); // New
+// Database Interaction Routes
+router.get('/chats', chatController.getAllChats);
+router.get('/chats/:id', chatController.getChatById);
+router.delete('/chats/:id', chatController.deleteChat);
+router.delete('/chats', chatController.deleteAllChats);
+router.put('/chats/:id/pin', chatController.togglePin);
+router.put('/chats/:id/title', chatController.renameChat); // Day 28
 
 module.exports = router;
