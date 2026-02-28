@@ -55,6 +55,7 @@ export const useTextToSpeech = () => {
 
     window.speechSynthesis.cancel();
 
+    // Strip Markdown
     const cleanText = text
       .replace(/[*_~`#]/g, "") 
       .replace(/```[\s\S]*?```/g, "Code block omitted.")
@@ -82,9 +83,5 @@ export const useTextToSpeech = () => {
     setIsSpeaking(false);
   }, []);
 
-  return { 
-    voices, activeVoice, setActiveVoice: handleSetVoice, 
-    isSpeaking, speak, stop, 
-    rate, setRate, pitch, setPitch 
-  };
+  return { voices, activeVoice, setActiveVoice: handleSetVoice, isSpeaking, speak, stop, rate, setRate, pitch, setPitch };
 };
