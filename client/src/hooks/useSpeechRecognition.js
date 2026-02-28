@@ -9,13 +9,23 @@ export const useSpeechRecognition = () => {
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const rec = new SpeechRecognition();
-      rec.continuous = false;
+      
+      // FIX 2: Set continuous to TRUE so it doesn't stop when you take a breath
+      rec.continuous = true; 
+      
       rec.interimResults = false;
-      rec.lang = 'en-US'; // Default fallback, TTS engine handles the read-back
+      rec.lang = 'en-US'; 
 
       rec.onresult = (event) => {
-        const text = Array.from(event.results).map(res => res[0].transcript).join('');
-        setTranscript(text);
+        let newTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            newTranscript += event.results[i][0].transcript;
+          }
+        }
+        if (newTranscript) {
+           setTranscript(newTranscript);
+        }
       };
 
       rec.onerror = (event) => {
@@ -24,6 +34,7 @@ export const useSpeechRecognition = () => {
       };
 
       rec.onend = () => {
+        // If the user didn't manually stop it, but the engine closed it anyway, update state
         setIsListening(false);
       };
 
