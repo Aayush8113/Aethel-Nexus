@@ -57,16 +57,11 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const finalSystemInstruction = customPrompt ? `${systemInstruction}\n\nUSER OVERRIDE RULES:\n${customPrompt}` : systemInstruction;
 
   useEffect(() => {
-    if (messages.length > prevMsgLength.current && !isAutoScrollEnabled) {
-       setHasUnread(true);
-    }
+    if (messages.length > prevMsgLength.current && !isAutoScrollEnabled) { setHasUnread(true); }
     prevMsgLength.current = messages.length;
   }, [messages.length, isAutoScrollEnabled]);
 
-  const handleScrollToBottom = (force) => {
-    scrollToBottom(force);
-    setHasUnread(false);
-  };
+  const handleScrollToBottom = (force) => { scrollToBottom(force); setHasUnread(false); };
 
   useEffect(() => {
     if (droppedImage) { setImage(droppedImage); clearDroppedFiles(); success("Image attached!"); }
@@ -162,10 +157,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       if (!activeChatId && response.chatId) onChatUpdated();
     } catch (err) { notifyError("Connection Error"); } finally { setIsLoading(false); }
   };
-
-  const ThemedInput = () => (
-    <MessageInput input={input} setInput={setInput} image={image} setImage={setImage} isListening={isListening} startListening={startListening} isLoading={isLoading} handleSend={handleSend} isSpeaking={isSpeaking} stopSpeaking={stop} notifySuccess={success} />
-  );
 
   const displayedMessages = searchQuery ? messages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase())) : messages;
   const currentMetrics = generateChatAnalytics(messages);
@@ -263,12 +254,16 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       </div>
 
       <div className={`p-4 md:p-6 bg-slate-950/80 backdrop-blur-md border-t border-slate-800 sticky bottom-0 z-10 w-full transition-all duration-500 print:hidden ${isFocusMode || isSearchOpen ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
-        <ThemedInput />
+        {/* FIX 1: Direct render of MessageInput, no inline function definition! */}
+        <MessageInput input={input} setInput={setInput} image={image} setImage={setImage} isListening={isListening} startListening={startListening} isLoading={isLoading} handleSend={handleSend} isSpeaking={isSpeaking} stopSpeaking={stop} notifySuccess={success} />
       </div>
 
       {isFocusMode && !isSearchOpen && (
          <div className="fixed bottom-0 left-0 right-0 p-6 z-40 flex justify-center bg-gradient-to-t from-black via-black/90 to-transparent pt-20 animate-fade-in-up pointer-events-none print:hidden">
-            <div className="w-full max-w-3xl pointer-events-auto"><ThemedInput /></div>
+            <div className="w-full max-w-3xl pointer-events-auto">
+               {/* FIX 1: Direct render of MessageInput here too! */}
+               <MessageInput input={input} setInput={setInput} image={image} setImage={setImage} isListening={isListening} startListening={startListening} isLoading={isLoading} handleSend={handleSend} isSpeaking={isSpeaking} stopSpeaking={stop} notifySuccess={success} />
+            </div>
          </div>
       )}
     </div>
