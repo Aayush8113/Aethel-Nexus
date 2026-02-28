@@ -1,6 +1,6 @@
 import Editor from "@monaco-editor/react";
 
-const CodeEditorWindow = ({ code, language, onChange, theme = "vs-dark", wordWrap = "on" }) => {
+const CodeEditorWindow = ({ code, language, onChange, theme = "vs-dark", wordWrap = "on", fontSize = 14 }) => {
   const handleEditorChange = (value) => { onChange(value || ""); };
 
   return (
@@ -11,8 +11,8 @@ const CodeEditorWindow = ({ code, language, onChange, theme = "vs-dark", wordWra
         value={code} theme={theme} onChange={handleEditorChange}
         options={{
           minimap: { enabled: false },
-          fontSize: 14,
-          wordWrap: wordWrap, // Dynamic Wrap
+          fontSize: fontSize, 
+          wordWrap: wordWrap, 
           scrollBeyondLastLine: false,
           padding: { top: 16, bottom: 16 },
           fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
