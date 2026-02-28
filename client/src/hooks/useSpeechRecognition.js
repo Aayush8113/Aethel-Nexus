@@ -10,11 +10,8 @@ export const useSpeechRecognition = (sttLang = 'en-US') => {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const rec = new SpeechRecognition();
       
-      // Changed back to FALSE: It will automatically stop when you stop speaking.
       rec.continuous = false; 
       rec.interimResults = false;
-      
-      // Uses the language selected in your settings (e.g., 'gu-IN' for Gujarati)
       rec.lang = sttLang; 
 
       rec.onresult = (event) => {
@@ -30,7 +27,7 @@ export const useSpeechRecognition = (sttLang = 'en-US') => {
       };
 
       rec.onerror = (event) => {
-        console.error('Speech recognition error', event.error);
+        console.error('Speech recognition error:', event.error);
         setIsListening(false);
       };
 
@@ -45,12 +42,22 @@ export const useSpeechRecognition = (sttLang = 'en-US') => {
   const startListening = useCallback(() => {
     if (recognition) {
       if (isListening) {
-        recognition.stop();
+        try { 
+          recognition.stop(); 
+        } catch(e) { 
+          console.warn("Mic stop safely bypassed", e); 
+        }
         setIsListening(false);
       } else {
-        recognition.start();
-        setIsListening(true);
-        setTranscript('');
+        try {
+          recognition.start();
+          setIsListening(true);
+          setTranscript('');
+        } catch (err) {
+          // FIX: If the browser complains it's already listening, catch the error and sync the UI!
+          console.warn("Mic is already listening. Syncing state.", err);
+          setIsListening(true);
+        }
       }
     } else {
       console.warn("Speech recognition not supported in this browser.");
