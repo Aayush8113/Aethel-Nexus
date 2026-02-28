@@ -13,7 +13,6 @@ const PersonaModal = lazy(() => import("./components/PersonaModal"));
 const ArtifactPanel = lazy(() => import("./components/ArtifactPanel"));
 const ShortcutsModal = lazy(() => import("./components/ShortcutsModal"));
 
-// Day 28: Imported updateChatTitle
 import { fetchAllChats, deleteChat, togglePinChat, deleteAllChats, updateChatTitle } from "./services/api";
 import { IoMenu } from "react-icons/io5";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
@@ -29,6 +28,7 @@ import { useBookmarks } from "./hooks/useBookmarks";
 import { importAppBackup } from "./utils/backupUtils"; 
 import { PERSONAS } from "./data/personas";
 import { useDesktopSidebar } from "./hooks/useDesktopSidebar"; 
+import { useAppTheme } from "./hooks/useAppTheme"; // <-- NEW IMPORT
 
 function App() {
   const [chats, setChats] = useState([]);
@@ -55,6 +55,7 @@ function App() {
   const { customPersonas, addPersona, deletePersona } = useCustomPersonas(); 
   const { bookmarks, toggleBookmark, isBookmarked, clearBookmarks } = useBookmarks(); 
   const { isDesktopSidebarOpen, toggleDesktopSidebar } = useDesktopSidebar(); 
+  const { appTheme, setAppTheme } = useAppTheme(); // <-- NEW HOOK INIT
 
   useKeyboardShortcuts({
     "n": () => { setActiveChatId(null); success("New conversation"); },
@@ -71,7 +72,7 @@ function App() {
     try {
       const data = await fetchAllChats();
       setChats(data || []);
-    } catch (error) { console.error(error); } finally { setIsChatsLoading(false); }
+    } catch (error) { console.error(error); notifyError("Server offline. Please start backend."); } finally { setIsChatsLoading(false); }
   };
 
   const handleDeleteChat = async (id) => {
@@ -97,7 +98,6 @@ function App() {
     }
   };
 
-  // Day 28: Inline Chat Rename Hookup
   const handleRenameChat = async (id, newTitle) => {
     try {
       const updatedChat = await updateChatTitle(id, newTitle);
@@ -105,9 +105,7 @@ function App() {
          setChats(prev => prev.map(chat => chat._id === id ? { ...chat, title: updatedChat.title } : chat));
          success("Chat renamed");
       }
-    } catch (err) {
-      notifyError("Failed to rename chat");
-    }
+    } catch (err) { notifyError("Failed to rename chat"); }
   };
 
   const handleRestoreSystem = async (file) => {
@@ -121,7 +119,7 @@ function App() {
   useEffect(() => { loadChats(); }, [activeChatId]);
 
   return (
-    <div className="flex h-screen bg-black text-white overflow-hidden flex-col font-sans">
+    <div className="flex h-screen bg-black text-white overflow-hidden flex-col font-sans transition-colors duration-300">
       <Toaster position="top-center" />
       {!isOnline && <OfflineBanner />}
 
@@ -136,6 +134,7 @@ function App() {
           isAutoRead={isAutoRead} onToggleAutoRead={() => setIsAutoRead(!isAutoRead)} 
           customPrompt={customPrompt} setCustomPrompt={setCustomPrompt}
           ttsRate={rate} setTtsRate={setRate} ttsPitch={pitch} setTtsPitch={setPitch}
+          appTheme={appTheme} setAppTheme={setAppTheme} // <-- PASSED DOWN TO SETTINGS
         />
         <PersonaModal 
           isOpen={isPersonaOpen} onClose={() => setIsPersonaOpen(false)} 
@@ -149,7 +148,7 @@ function App() {
         <FloatingControls isFocusMode={isFocusMode} onExitFocus={() => setIsFocusMode(false)} />
         {!isFocusMode && (<button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800/90 backdrop-blur rounded-lg border border-slate-700 shadow-xl text-white print:hidden"><IoMenu size={20} /></button>)}
 
-       <div className={`
+        <div className={`
            ${isFocusMode || !isDesktopSidebarOpen ? "md:-translate-x-full md:w-0 md:border-none overflow-hidden" : "md:translate-x-0 md:w-72"} 
            transition-all duration-500 ease-in-out h-full relative z-30 print:hidden
         `}>
@@ -161,7 +160,7 @@ function App() {
              onRenameChat={handleRenameChat} 
              onOpenSettings={() => setIsSettingsOpen(true)} onOpenPersonas={() => setIsPersonaOpen(true)}
              isInstallable={isInstallable} installApp={installApp}
-             isDesktopSidebarOpen={isDesktopSidebarOpen} // <-- CRITICAL PASS DOWN
+             isDesktopSidebarOpen={isDesktopSidebarOpen} 
            />
         </div>
 
