@@ -44,7 +44,7 @@ exports.handleChat = async (req, res) => {
     await chat.save();
 
     // Setup Gemini
-    const modelOptions = { model: "gemini-2.5-pro" }; // Use pro for coding/vision
+    const modelOptions = { model: "gemini-2.0-flash" }; // Use pro for coding/vision
     if (systemInstruction && systemInstruction.trim() !== "") {
       modelOptions.systemInstruction = systemInstruction;
     }
