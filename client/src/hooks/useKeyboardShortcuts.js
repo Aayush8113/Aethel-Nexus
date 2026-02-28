@@ -1,20 +1,39 @@
-import { useEffect } from "react";
+import { useEffect } from 'react';
 
 export const useKeyboardShortcuts = (shortcuts) => {
   useEffect(() => {
-    const handleKeyDown = (event) => {
-      // Ignore if user is typing in an input field
-      if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) return;
+    const handleKeyDown = (e) => {
+      // Allow default behavior in inputs/textareas unless explicitly handled
+      const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
 
-      Object.keys(shortcuts).forEach((key) => {
-        if (event.key.toLowerCase() === key.toLowerCase()) {
-          event.preventDefault();
-          shortcuts[key]();
-        }
-      });
+      // Global Command Palette (Cmd/Ctrl + K)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        if (shortcuts['k']) shortcuts['k']();
+        return;
+      }
+
+      // Escape key (always works)
+      if (e.key === 'Escape') {
+        if (shortcuts['Escape']) shortcuts['Escape']();
+        return;
+      }
+
+      // If we are typing in an input, don't trigger single-letter shortcuts
+      if (isInput) return;
+
+      // Single letter shortcuts
+      const key = e.key.toLowerCase();
+      if (shortcuts[key]) {
+        e.preventDefault();
+        shortcuts[key]();
+      } else if (shortcuts[e.key]) { // Support for '?'
+        e.preventDefault();
+        shortcuts[e.key]();
+      }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [shortcuts]);
 };
