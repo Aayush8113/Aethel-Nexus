@@ -1,45 +1,26 @@
-import axios from 'axios';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-const API = axios.create({ baseURL: 'http://localhost:5000/api' });
+export const fetchAllChats = async () => { const res = await fetch(`${API_URL}/chats`); return res.json(); };
+export const fetchChatById = async (id) => { const res = await fetch(`${API_URL}/chats/${id}`); return res.json(); };
+export const deleteChat = async (id) => { await fetch(`${API_URL}/chats/${id}`, { method: 'DELETE' }); return true; };
+export const deleteAllChats = async () => { await fetch(`${API_URL}/chats`, { method: 'DELETE' }); return true; };
+export const togglePinChat = async (id) => { const res = await fetch(`${API_URL}/chats/${id}/pin`, { method: 'PUT' }); return res.json(); };
+export const updateChatTitle = async (id, title) => {
+  const res = await fetch(`${API_URL}/chats/${id}/title`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title })
+  });
+  return res.json();
+};
 
 export const sendMessageToAI = async (message, history, chatId, imageFile, systemInstruction) => {
-  try {
-    const formData = new FormData();
-    formData.append("message", message || "");
-    if (chatId) formData.append("chatId", chatId);
-    formData.append("history", JSON.stringify(history));
-    if (systemInstruction) formData.append("systemInstruction", systemInstruction);
-    if (imageFile) formData.append("image", imageFile);
+  const formData = new FormData();
+  formData.append('message', message);
+  formData.append('history', JSON.stringify(history));
+  if (chatId) formData.append('chatId', chatId);
+  if (imageFile) formData.append('image', imageFile);
+  if (systemInstruction) formData.append('systemInstruction', systemInstruction);
 
-    const response = await API.post('/chat', formData);
-    return response.data;
-  } catch (error) {
-    console.error("API Error:", error);
-    throw error;
-  }
-};
-
-export const fetchAllChats = async () => { try { const res = await API.get('/chat'); return res.data; } catch (e) { return []; } };
-export const fetchChatById = async (id) => { try { const res = await API.get(`/chat/${id}`); return res.data; } catch (e) { return null; } };
-export const deleteChat = async (id) => { try { await API.delete(`/chat/${id}`); return true; } catch (e) { return false; } };
-
-// NEW FUNCTIONS
-export const togglePinChat = async (id) => {
-  try {
-    const response = await API.put(`/chat/${id}/pin`);
-    return response.data;
-  } catch (error) {
-    console.error("Pin Error:", error);
-    return null;
-  }
-};
-
-export const deleteAllChats = async () => {
-  try {
-    await API.delete('/chat/all');
-    return true;
-  } catch (error) {
-    console.error("Clear Error:", error);
-    return false;
-  }
+  const res = await fetch(`${API_URL}/chat`, { method: 'POST', body: formData });
+  if (!res.ok) throw new Error("API Error");
+  return res.json();
 };
