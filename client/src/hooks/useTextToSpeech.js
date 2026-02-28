@@ -61,10 +61,28 @@ export const useTextToSpeech = () => {
       .replace(/```[\s\S]*?```/g, "Code block omitted.")
       .trim();
 
+    // ==========================================
+    // MULTILINGUAL AUTO-DETECTION LOGIC
+    // ==========================================
+    let voiceToUse = activeVoice;
+    let langToUse = activeVoice.lang;
+
+    const gujaratiRegex = /[\u0A80-\u0AFF]/; // Detects Gujarati text
+    const hindiRegex = /[\u0900-\u097F]/;    // Detects Hindi text
+
+    if (gujaratiRegex.test(cleanText)) {
+      // Find a Gujarati voice installed on the OS/Browser
+      const guVoice = voices.find(v => v.lang.includes('gu') || v.name.toLowerCase().includes('gujarati'));
+      if (guVoice) { voiceToUse = guVoice; langToUse = guVoice.lang; }
+    } else if (hindiRegex.test(cleanText)) {
+      // Find a Hindi voice installed on the OS/Browser
+      const hiVoice = voices.find(v => v.lang.includes('hi') || v.name.toLowerCase().includes('hindi'));
+      if (hiVoice) { voiceToUse = hiVoice; langToUse = hiVoice.lang; }
+    }
+
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    
-    utterance.voice = activeVoice;
-    utterance.lang = activeVoice.lang; 
+    utterance.voice = voiceToUse;
+    utterance.lang = langToUse; 
     utterance.rate = rate; 
     utterance.pitch = pitch; 
 
@@ -76,7 +94,7 @@ export const useTextToSpeech = () => {
     };
 
     setTimeout(() => { window.speechSynthesis.speak(utterance); }, 50);
-  }, [activeVoice, rate, pitch]);
+  }, [activeVoice, rate, pitch, voices]);
 
   const stop = useCallback(() => {
     window.speechSynthesis.cancel();
