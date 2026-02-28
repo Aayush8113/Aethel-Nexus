@@ -1,26 +1,19 @@
-import { useState, useCallback } from "react";
+import { useState } from 'react';
 
 export const useArtifact = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [activeCode, setActiveCode] = useState("");
   const [activeLanguage, setActiveLanguage] = useState("javascript");
 
-  const openArtifact = useCallback((code, language) => {
+  const openArtifact = (code, language) => {
     setActiveCode(code);
-    setActiveLanguage(language || "javascript");
+    setActiveLanguage(language);
     setIsVisible(true);
-  }, []);
-
-  const closeArtifact = useCallback(() => {
-    setIsVisible(false);
-  }, []);
-
-  return { 
-    isVisible, 
-    activeCode, 
-    activeLanguage, 
-    openArtifact, 
-    closeArtifact, 
-    setActiveCode 
   };
+
+  const closeArtifact = () => {
+    setIsVisible(false);
+  };
+
+  return { isVisible, activeCode, activeLanguage, openArtifact, closeArtifact, setActiveCode };
 };
