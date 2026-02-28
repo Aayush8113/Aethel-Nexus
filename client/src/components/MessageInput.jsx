@@ -6,7 +6,7 @@ import PromptMenu from "./PromptMenu";
 import { PROMPTS } from "../data/prompts";
 import { estimateTokens, getTokenMetrics } from "../utils/tokenUtils"; 
 import { getCharCount, getWordCount } from "../utils/textStats";
-import { autoFormatInput } from "../utils/codeFormatUtils"; // Day 26
+import { autoFormatInput } from "../utils/codeFormatUtils";
 
 const MessageInput = ({ input, setInput, isListening, startListening, isLoading, handleSend, isSpeaking, stopSpeaking, image, setImage, notifySuccess }) => {
   const textareaRef = useRef(null);
