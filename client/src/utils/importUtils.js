@@ -4,15 +4,10 @@ export const importChatFromJSON = (file) => {
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result);
-        if (!data.messages || !Array.isArray(data.messages)) {
-          throw new Error("Invalid Aethel chat format.");
-        }
+        if (!data.messages || !Array.isArray(data.messages)) throw new Error("Invalid Aethel chat format.");
         resolve(data.messages);
-      } catch (err) {
-        reject(err);
-      }
+      } catch (err) { reject(err); }
     };
-    
     reader.onerror = (err) => reject(err);
     reader.readAsText(file);
   });

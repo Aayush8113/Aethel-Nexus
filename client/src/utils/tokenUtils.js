@@ -15,15 +15,8 @@ export const getTokenMetrics = (count) => {
   let textColor = "text-emerald-400";
   let status = "Optimal";
 
-  if (percentage > 85) {
-    color = "bg-red-500";
-    textColor = "text-red-400";
-    status = "Critical";
-  } else if (percentage > 60) {
-    color = "bg-yellow-500";
-    textColor = "text-yellow-400";
-    status = "Warning";
-  }
+  if (percentage > 85) { color = "bg-red-500"; textColor = "text-red-400"; status = "Critical"; } 
+  else if (percentage > 60) { color = "bg-yellow-500"; textColor = "text-yellow-400"; status = "Warning"; }
 
   return { percentage, color, textColor, status };
 };

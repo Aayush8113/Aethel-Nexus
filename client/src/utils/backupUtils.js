@@ -13,14 +13,11 @@ export const exportAppBackup = () => {
       aethel_voice_pitch: localStorage.getItem("aethel_voice_pitch"),
     }
   };
-
   const element = document.createElement("a");
   const file = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
   element.href = URL.createObjectURL(file);
   element.download = `Aethel_System_Backup_${Date.now()}.json`;
-  document.body.appendChild(element);
-  element.click();
-  document.body.removeChild(element);
+  document.body.appendChild(element); element.click(); document.body.removeChild(element);
 };
 
 export const importAppBackup = (file) => {
@@ -30,16 +27,11 @@ export const importAppBackup = (file) => {
       try {
         const data = JSON.parse(e.target.result);
         if (!data.storage) throw new Error("Invalid Aethel Backup format.");
-        
         Object.keys(data.storage).forEach(key => {
-          if (data.storage[key] !== null) {
-            localStorage.setItem(key, data.storage[key]);
-          }
+          if (data.storage[key] !== null) localStorage.setItem(key, data.storage[key]);
         });
         resolve();
-      } catch (err) {
-        reject(err);
-      }
+      } catch (err) { reject(err); }
     };
     reader.onerror = (err) => reject(err);
     reader.readAsText(file);
