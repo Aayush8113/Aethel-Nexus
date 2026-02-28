@@ -5,7 +5,8 @@ import { useTouchSwipe } from "../hooks/useTouchSwipe";
 import PingIndicator from "./PingIndicator"; 
 import { categorizeChatsByDate } from "../utils/dateUtils"; 
 
-const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, onTogglePin, onRenameChat, onClearAll, onOpenSettings, onOpenPersonas, isOpen, onClose, isLoading, isInstallable, installApp }) => {
+// FIX: Added `isDesktopSidebarOpen` as a prop
+const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, onTogglePin, onRenameChat, onClearAll, onOpenSettings, onOpenPersonas, isOpen, onClose, isLoading, isInstallable, installApp, isDesktopSidebarOpen }) => {
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
@@ -20,9 +21,7 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, o
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [editingId]);
 
-  useEffect(() => {
-    if (editingId && editInputRef.current) editInputRef.current.focus();
-  }, [editingId]);
+  useEffect(() => { if (editingId && editInputRef.current) editInputRef.current.focus(); }, [editingId]);
 
   const handleSaveRename = (id) => {
     if (editTitle.trim() && onRenameChat) onRenameChat(id, editTitle.trim());
@@ -49,16 +48,11 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, o
                     <button onClick={() => setEditingId(null)} className="p-1 text-slate-400 hover:text-red-400"><IoCloseOutline size={16}/></button>
                  </div>
               ) : (
-                <button 
-                  onClick={() => onSelectChat(chat._id)} 
-                  onDoubleClick={() => { setEditingId(chat._id); setEditTitle(chat.title); }}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all ${activeChatId === chat._id ? "bg-slate-800 text-indigo-300 border border-slate-700 shadow-sm" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"}`}
-                >
+                <button onClick={() => onSelectChat(chat._id)} onDoubleClick={() => { setEditingId(chat._id); setEditTitle(chat.title); }} className={`w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all ${activeChatId === chat._id ? "bg-slate-800 text-indigo-300 border border-slate-700 shadow-sm" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"}`}>
                   <div className={`transition-colors ${chat.isPinned ? "text-indigo-400" : "text-slate-500"}`}>{chat.isPinned ? <IoPin size={14} /> : <IoChatboxOutline size={16} />}</div>
                   <span className="pr-12 text-sm font-medium truncate select-none">{chat.title}</span>
                 </button>
               )}
-              
               {!editingId && (
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10 bg-slate-900/90 backdrop-blur rounded px-1 py-0.5 border border-slate-800">
                   <button onClick={(e) => { e.stopPropagation(); onTogglePin(chat._id); }} className="p-1.5 text-slate-500 hover:text-indigo-400" title={chat.isPinned ? "Unpin" : "Pin"}><IoPin size={13} /></button>
@@ -73,7 +67,7 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, o
   };
 
   return (
-    <div {...swipeHandlers} className={`fixed inset-y-0 left-0 z-30 w-72 bg-slate-900/95 backdrop-blur-2xl border-r border-slate-800 transform transition-transform duration-300 ease-in-out print:hidden ${isOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 flex flex-col h-full`}>
+    <div {...swipeHandlers} className={`fixed inset-y-0 left-0 z-30 w-72 bg-slate-900/95 backdrop-blur-2xl border-r border-slate-800 transform transition-transform duration-300 ease-in-out print:hidden ${isOpen ? "translate-x-0" : "-translate-x-full"} md:relative ${isDesktopSidebarOpen !== false ? "md:translate-x-0" : "md:-translate-x-full"} flex flex-col h-full`}>
       <div className="flex flex-col h-full p-4">
         <div className="flex items-center gap-3 mb-6 px-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20"><IoCubeOutline size={20} className="text-white" /></div>
