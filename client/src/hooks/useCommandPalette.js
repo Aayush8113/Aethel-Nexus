@@ -1,23 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from 'react';
 
 export const useCommandPalette = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  
+  const togglePalette = () => setIsPaletteOpen(prev => !prev);
+  const openPalette = () => setIsPaletteOpen(true);
+  const closePalette = () => setIsPaletteOpen(false);
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Cmd+K (Mac) or Ctrl+K (Windows)
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setIsOpen((prev) => !prev);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  const openPalette = () => setIsOpen(true);
-  const closePalette = () => setIsOpen(false);
-
-  return { isPaletteOpen: isOpen, openPalette, closePalette };
+  return { isPaletteOpen, togglePalette, openPalette, closePalette };
 };
