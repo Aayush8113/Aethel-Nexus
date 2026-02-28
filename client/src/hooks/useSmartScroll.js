@@ -34,7 +34,6 @@ export const useSmartScroll = (dependencies = []) => {
     containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Trigger scroll on dependency change (e.g. new message)
   useEffect(() => {
     scrollToBottom();
   }, [...dependencies, scrollToBottom]);
