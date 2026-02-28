@@ -1,11 +1,15 @@
 import { useState } from "react";
 
-export const useTouchSwipe = ({ onSwipeLeft, onSwipeRight, threshold = 50 }) => {
+export const useTouchSwipe = ({
+  onSwipeLeft,
+  onSwipeRight,
+  threshold = 50,
+}) => {
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
 
   const onTouchStart = (e) => {
-    setTouchEnd(null); 
+    setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
   };
 
