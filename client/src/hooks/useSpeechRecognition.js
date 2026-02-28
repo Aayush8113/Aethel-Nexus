@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
-export const useSpeechRecognition = () => {
+// Passed sttLang as a prop so it can switch between English, Gujarati, Hindi, etc.
+export const useSpeechRecognition = (sttLang = 'en-US') => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [recognition, setRecognition] = useState(null);
@@ -10,11 +11,11 @@ export const useSpeechRecognition = () => {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const rec = new SpeechRecognition();
       
-      // FIX 2: Set continuous to TRUE so it doesn't stop when you take a breath
       rec.continuous = true; 
-      
       rec.interimResults = false;
-      rec.lang = 'en-US'; 
+      
+      // Update the language dynamically based on user settings
+      rec.lang = sttLang; 
 
       rec.onresult = (event) => {
         let newTranscript = '';
@@ -34,13 +35,12 @@ export const useSpeechRecognition = () => {
       };
 
       rec.onend = () => {
-        // If the user didn't manually stop it, but the engine closed it anyway, update state
         setIsListening(false);
       };
 
       setRecognition(rec);
     }
-  }, []);
+  }, [sttLang]); // Re-initialize if language changes
 
   const startListening = useCallback(() => {
     if (recognition) {
