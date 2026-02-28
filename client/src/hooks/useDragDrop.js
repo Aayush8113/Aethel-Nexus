@@ -30,12 +30,9 @@ export const useDragDrop = () => {
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0];
         
-        // Handle Images
         if (file.type.startsWith('image/')) {
           setDroppedImage(file);
-        } 
-        // Handle Code/Text files
-        else if (file.type === 'text/plain' || file.name.match(/\.(js|jsx|ts|tsx|py|html|css|json|md|cpp|c|java|go|rs|rb|php|sh|env)$/i)) {
+        } else if (file.type === 'text/plain' || file.name.match(/\.(js|jsx|ts|tsx|py|html|css|json|md|cpp|c|java|go|rs|rb|php|sh|env)$/i)) {
           try {
             const text = await file.text();
             const ext = file.name.split('.').pop();
@@ -60,10 +57,5 @@ export const useDragDrop = () => {
     };
   }, []);
 
-  return { 
-    isDragging, 
-    droppedImage, 
-    droppedText,
-    clearDroppedFiles: () => { setDroppedImage(null); setDroppedText(null); } 
-  };
+  return { isDragging, droppedImage, droppedText, clearDroppedFiles: () => { setDroppedImage(null); setDroppedText(null); } };
 };
