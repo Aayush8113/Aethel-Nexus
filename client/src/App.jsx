@@ -149,15 +149,19 @@ function App() {
         <FloatingControls isFocusMode={isFocusMode} onExitFocus={() => setIsFocusMode(false)} />
         {!isFocusMode && (<button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800/90 backdrop-blur rounded-lg border border-slate-700 shadow-xl text-white print:hidden"><IoMenu size={20} /></button>)}
 
-        <div className={`${isFocusMode || !isDesktopSidebarOpen ? "md:-translate-x-full md:w-0 md:border-none" : "md:translate-x-0 md:w-72"} transition-all duration-500 ease-in-out h-full relative z-30 print:hidden`}>
+       <div className={`
+           ${isFocusMode || !isDesktopSidebarOpen ? "md:-translate-x-full md:w-0 md:border-none overflow-hidden" : "md:translate-x-0 md:w-72"} 
+           transition-all duration-500 ease-in-out h-full relative z-30 print:hidden
+        `}>
            <Sidebar 
              chats={chats} activeChatId={activeChatId} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} isLoading={isChatsLoading}
              onSelectChat={(id) => { setActiveChatId(id); setIsSidebarOpen(false); }} 
              onNewChat={() => { setActiveChatId(null); setIsSidebarOpen(false); success("New conversation"); }}
              onDeleteChat={handleDeleteChat} onTogglePin={handleTogglePin} onClearAll={handleClearAll}
-             onRenameChat={handleRenameChat} // Day 28
+             onRenameChat={handleRenameChat} 
              onOpenSettings={() => setIsSettingsOpen(true)} onOpenPersonas={() => setIsPersonaOpen(true)}
              isInstallable={isInstallable} installApp={installApp}
+             isDesktopSidebarOpen={isDesktopSidebarOpen} // <-- CRITICAL PASS DOWN
            />
         </div>
 
