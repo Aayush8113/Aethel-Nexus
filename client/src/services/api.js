@@ -12,12 +12,12 @@ export const updateChatTitle = async (id, title) => {
   return res.json();
 };
 
-export const sendMessageToAI = async (message, history, chatId, imageFile, systemInstruction) => {
+export const sendMessageToAI = async (message, history, chatId, attachedFile, systemInstruction) => {
   const formData = new FormData();
   formData.append('message', message);
   formData.append('history', JSON.stringify(history));
   if (chatId) formData.append('chatId', chatId);
-  if (imageFile) formData.append('image', imageFile);
+  if (attachedFile) formData.append('file', attachedFile); // <-- Upgraded to generic 'file'
   if (systemInstruction) formData.append('systemInstruction', systemInstruction);
 
   const res = await fetch(`${API_URL}/chat`, { method: 'POST', body: formData });
