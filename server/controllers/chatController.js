@@ -18,9 +18,10 @@ exports.handleChat = async (req, res) => {
 
     const tools = [];
     if (useWebSearch === 'true') {
-      tools.push({ googleSearch: {} }); // Activates native live web search
+      tools.push({ googleSearch: {} }); 
     }
 
+    // 🟢 RESTORED: Back to your confirmed working model
     const modelOptions = { 
       model: "gemini-2.0-flash", 
       systemInstruction: systemInstruction ? { role: "system", parts: [{ text: systemInstruction }] } : undefined,
@@ -34,6 +35,7 @@ exports.handleChat = async (req, res) => {
       parts: [{ text: msg.content }]
     }));
 
+    // Keep history tight to save your API tokens and prevent 429 errors
     if (formattedHistory.length > 10) formattedHistory = formattedHistory.slice(-10);
     while (formattedHistory.length > 0 && formattedHistory[0].role !== 'user') formattedHistory.shift(); 
 
@@ -96,6 +98,12 @@ exports.handleChat = async (req, res) => {
 
   } catch (error) {
     console.error("AI Generation Error:", error);
+    
+    // 🟢 Safety Net: Gracefully handles quota limits without crashing your server
+    if (error.status === 429 || (error.message && error.message.includes('429'))) {
+        return res.status(429).json({ error: "Google API Quota Exceeded. Please wait a minute for the free tier to cool down." });
+    }
+    
     res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 };
