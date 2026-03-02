@@ -30,10 +30,10 @@ import { useChatSearch } from "../hooks/useChatSearch";
 import { useInputDraft } from "../hooks/useInputDraft"; 
 import { getReadTime, generateChatAnalytics } from "../utils/analyticsUtils"; 
 
-const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus, onImportBackup, toggleBookmark, isBookmarked, onToggleBookmarks, onToggleDesktopSidebar, sttLang }) => {
+const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus, onImportBackup, toggleBookmark, isBookmarked, onToggleBookmarks, onToggleDesktopSidebar, sttLang, setSttLang }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useInputDraft(activeChatId);
-  const [image, setImage] = useState(null);
+  const [file, setFile] = useState(null); // Updated from image
   const [isLoading, setIsLoading] = useState(false);
   const [readingMsgId, setReadingMsgId] = useState(null);
   
@@ -63,8 +63,9 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
   const handleScrollToBottom = (force) => { scrollToBottom(force); setHasUnread(false); };
 
+  // Handle Drag & Drop updates for general files
   useEffect(() => {
-    if (droppedImage) { setImage(droppedImage); clearDroppedFiles(); success("Image attached!"); }
+    if (droppedImage) { setFile(droppedImage); clearDroppedFiles(); success("Image attached!"); }
     if (droppedText) { setInput(prev => prev + `\n\n\`\`\`${droppedText.ext}\n// File: ${droppedText.name}\n${droppedText.content}\n\`\`\`\n`); clearDroppedFiles(); success(`Parsed ${droppedText.name}`); }
   }, [droppedImage, droppedText, clearDroppedFiles, success, setInput]);
 
@@ -73,7 +74,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       const lastMsg = messages[messages.length - 1];
       if (lastMsg.role === "model" && !isSpeaking) { setTimeout(() => { speak(lastMsg.content); setReadingMsgId(messages.length - 1); }, 500); }
     }
-  }, [messages, isLoading, isAutoRead]);
+  }, [messages, isLoading, isAutoRead, isSpeaking, speak]);
 
   useEffect(() => { if (transcript) { setInput((prev) => prev + (prev ? " " : "") + transcript); resetTranscript(); } }, [transcript, resetTranscript, setInput]);
 
@@ -110,8 +111,8 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const handleCopyAll = () => { navigator.clipboard.writeText(messages.map(m => `${m.role.toUpperCase()}:\n${m.content}`).join("\n\n---\n\n")); success("Copied to clipboard!"); };
   const handleCopyMessage = (content) => { navigator.clipboard.writeText(content); success("Message copied!"); };
 
-  const handleImportJSON = async (file) => {
-    try { const importedMessages = await importChatFromJSON(file); setMessages(importedMessages); success("Chat imported successfully!"); } 
+  const handleImportJSON = async (fileToImport) => {
+    try { const importedMessages = await importChatFromJSON(fileToImport); setMessages(importedMessages); success("Chat imported successfully!"); } 
     catch (err) { notifyError("Failed to import chat. Invalid format."); }
   };
 
@@ -138,7 +139,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     const newHistory = messages.slice(0, lastUserIndex + 1); 
     setMessages(newHistory); setIsLoading(true); stop();
     try {
-      const response = await sendMessageToAI(userMessage.content, newHistory.slice(0, -1), activeChatId, userMessage.image, finalSystemInstruction);
+      const response = await sendMessageToAI(userMessage.content, newHistory.slice(0, -1), activeChatId, userMessage.file || userMessage.image, finalSystemInstruction);
       setMessages([...newHistory, { role: "model", content: response.reply, createdAt: Date.now() }]);
       if (!activeChatId && response.chatId) onChatUpdated();
     } catch (err) { notifyError("Failed to regenerate response."); } finally { setIsLoading(false); }
@@ -146,13 +147,28 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
   const handleSend = async (e) => {
     e?.preventDefault();
-    if ((!input.trim() && !image) || isLoading) return;
+    if ((!input.trim() && !file) || isLoading) return;
     stop(); 
-    setMessages((prev) => [...prev, { role: "user", content: input, image: image ? URL.createObjectURL(image) : null, createdAt: Date.now() }]);
-    const textToSend = input; const imageToSend = image;
-    setInput(""); setImage(null); setIsLoading(true);
+    
+    const isImage = file && file.type.startsWith('image/');
+    const previewUrl = isImage ? URL.createObjectURL(file) : null;
+    const documentTag = (!isImage && file) ? `\n\n*(📎 Attached: ${file.name})*` : "";
+
+    setMessages((prev) => [...prev, { 
+      role: "user", 
+      content: input + documentTag, 
+      image: previewUrl, 
+      file: !isImage ? file : null,
+      createdAt: Date.now() 
+    }]);
+
+    const textToSend = input; 
+    const fileToSend = file; 
+    
+    setInput(""); setFile(null); setIsLoading(true);
+    
     try {
-      const response = await sendMessageToAI(textToSend, messages, activeChatId, imageToSend, finalSystemInstruction);
+      const response = await sendMessageToAI(textToSend, messages, activeChatId, fileToSend, finalSystemInstruction);
       setMessages((prev) => [...prev, { role: "model", content: response.reply, createdAt: Date.now() }]);
       if (!activeChatId && response.chatId) onChatUpdated();
     } catch (err) { notifyError("Connection Error"); } finally { setIsLoading(false); }
@@ -203,7 +219,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
               <div className={`max-w-[85%] md:max-w-[85%] rounded-2xl p-4 shadow-sm group relative ${msg.role === "user" ? "bg-slate-800 text-white border border-slate-700 rounded-tr-sm" : "bg-transparent text-slate-200 border border-slate-800/50 rounded-tl-sm w-full"}`}>
                 {msg.image && (
                   <div className="mb-3 overflow-hidden rounded-lg border border-slate-700 cursor-zoom-in" onClick={() => setLightboxSrc(msg.image)}>
-                    <img src={msg.image} className="max-h-60 w-auto object-contain bg-black/20" />
+                    <img src={msg.image} alt="attached" className="max-h-60 w-auto object-contain bg-black/20" />
                   </div>
                 )}
                 
@@ -237,8 +253,8 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                       )}
                     </div>
                     <div className="text-[10px] text-slate-600 font-mono flex items-center gap-2">
-                       {msg.role === 'model' && <span className="flex items-center gap-1"><IoTimeOutline /> {getReadTime(msg.content)}</span>}
-                       <span>{formatTime(msg.createdAt)}</span>
+                        {msg.role === 'model' && <span className="flex items-center gap-1"><IoTimeOutline /> {getReadTime(msg.content)}</span>}
+                        <span>{formatTime(msg.createdAt)}</span>
                     </div>
                  </div>
               </div>
@@ -254,15 +270,13 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       </div>
 
       <div className={`p-4 md:p-6 bg-slate-950/80 backdrop-blur-md border-t border-slate-800 sticky bottom-0 z-10 w-full transition-all duration-500 print:hidden ${isFocusMode || isSearchOpen ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
-        {/* FIX 1: Direct render of MessageInput, no inline function definition! */}
-        <MessageInput input={input} setInput={setInput} image={image} setImage={setImage} isListening={isListening} startListening={startListening} isLoading={isLoading} handleSend={handleSend} isSpeaking={isSpeaking} stopSpeaking={stop} notifySuccess={success} />
+        <MessageInput input={input} setInput={setInput} file={file} setFile={setFile} isListening={isListening} startListening={startListening} isLoading={isLoading} handleSend={handleSend} isSpeaking={isSpeaking} stopSpeaking={stop} notifySuccess={success} sttLang={sttLang} setSttLang={setSttLang} />
       </div>
 
       {isFocusMode && !isSearchOpen && (
          <div className="fixed bottom-0 left-0 right-0 p-6 z-40 flex justify-center bg-gradient-to-t from-black via-black/90 to-transparent pt-20 animate-fade-in-up pointer-events-none print:hidden">
             <div className="w-full max-w-3xl pointer-events-auto">
-               {/* FIX 1: Direct render of MessageInput here too! */}
-               <MessageInput input={input} setInput={setInput} image={image} setImage={setImage} isListening={isListening} startListening={startListening} isLoading={isLoading} handleSend={handleSend} isSpeaking={isSpeaking} stopSpeaking={stop} notifySuccess={success} />
+               <MessageInput input={input} setInput={setInput} file={file} setFile={setFile} isListening={isListening} startListening={startListening} isLoading={isLoading} handleSend={handleSend} isSpeaking={isSpeaking} stopSpeaking={stop} notifySuccess={success} sttLang={sttLang} setSttLang={setSttLang} />
             </div>
          </div>
       )}
