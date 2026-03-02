@@ -12,13 +12,15 @@ export const updateChatTitle = async (id, title) => {
   return res.json();
 };
 
-export const sendMessageToAI = async (message, history, chatId, attachedFile, systemInstruction) => {
+// Added useWebSearch to the payload
+export const sendMessageToAI = async (message, history, chatId, attachedFile, systemInstruction, useWebSearch) => {
   const formData = new FormData();
   formData.append('message', message);
   formData.append('history', JSON.stringify(history));
   if (chatId) formData.append('chatId', chatId);
-  if (attachedFile) formData.append('file', attachedFile); // <-- Upgraded to generic 'file'
+  if (attachedFile) formData.append('file', attachedFile);
   if (systemInstruction) formData.append('systemInstruction', systemInstruction);
+  if (useWebSearch) formData.append('useWebSearch', 'true'); // Send boolean as string
 
   const res = await fetch(`${API_URL}/chat`, { method: 'POST', body: formData });
   if (!res.ok) throw new Error("API Error");
