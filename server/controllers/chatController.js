@@ -1,7 +1,7 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Chat = require('../models/Chat');
 const fs = require('fs');
-const pdf = require('pdf-parse'); // The new PDF parser
+const pdf = require('pdf-parse'); 
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -13,13 +13,20 @@ const fileToGenerativePart = (path, mimeType) => {
 
 exports.handleChat = async (req, res) => {
   try {
-    const { message, chatId, systemInstruction } = req.body;
+    const { message, chatId, systemInstruction, useWebSearch } = req.body;
     let history = req.body.history ? JSON.parse(req.body.history) : [];
 
+    const tools = [];
+    if (useWebSearch === 'true') {
+      tools.push({ googleSearch: {} }); // Activates native live web search
+    }
+
     const modelOptions = { 
-      model: "gemini-2.0-flash", // Keeping your fast model
+      model: "gemini-2.0-flash", 
       systemInstruction: systemInstruction ? { role: "system", parts: [{ text: systemInstruction }] } : undefined,
+      tools: tools.length > 0 ? tools : undefined
     };
+    
     const model = genAI.getGenerativeModel(modelOptions);
 
     let formattedHistory = history.map(msg => ({
@@ -32,9 +39,6 @@ exports.handleChat = async (req, res) => {
 
     const chatSession = model.startChat({ history: formattedHistory });
 
-    // ==========================================
-    // THE RAG ENGINE: Document Parsing
-    // ==========================================
     let result;
     let finalUserMessage = message;
     let imageUrlForDb = null;
@@ -45,12 +49,10 @@ exports.handleChat = async (req, res) => {
       const fileName = req.file.originalname;
 
       if (mime.startsWith('image/')) {
-        // Handle as Image
         const imagePart = fileToGenerativePart(filePath, mime);
         result = await chatSession.sendMessage([finalUserMessage, imagePart]);
-        imageUrlForDb = `/uploads/${req.file.filename}`; // Save image to render in UI
+        imageUrlForDb = `/uploads/${req.file.filename}`; 
       } else {
-        // Handle as Document (PDF, CSV, TXT)
         let extractedText = "";
         if (mime === 'application/pdf') {
           const dataBuffer = fs.readFileSync(filePath);
@@ -60,15 +62,10 @@ exports.handleChat = async (req, res) => {
           extractedText = fs.readFileSync(filePath, 'utf8');
         }
 
-        // Inject the document text into the prompt silently
         const augmentedPrompt = `${finalUserMessage}\n\n[CONTEXT FROM ATTACHED FILE: ${fileName}]\n${extractedText}`;
         result = await chatSession.sendMessage(augmentedPrompt);
-        
-        // Add a visual tag to the user's message so they know the file was attached
         finalUserMessage = `${message}\n\n*(📎 Attached: ${fileName})*`; 
       }
-      
-      // Clean up temp file
       fs.unlinkSync(filePath);
     } else {
       result = await chatSession.sendMessage(finalUserMessage);
@@ -76,7 +73,6 @@ exports.handleChat = async (req, res) => {
 
     const reply = result.response.text();
 
-    // Database Save
     let chat;
     if (chatId) {
       chat = await Chat.findById(chatId);
@@ -104,7 +100,6 @@ exports.handleChat = async (req, res) => {
   }
 };
 
-// ... keep all other existing routes identical ...
 exports.getAllChats = async (req, res) => { try { const chats = await Chat.find().sort({ updatedAt: -1 }); res.json(chats); } catch (err) { res.status(500).json({ error: 'Failed' }); } };
 exports.getChatById = async (req, res) => { try { const chat = await Chat.findById(req.params.id); res.json(chat); } catch (err) { res.status(500).json({ error: 'Failed' }); } };
 exports.deleteChat = async (req, res) => { try { await Chat.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (err) { res.status(500).json({ error: 'Failed' }); } };
