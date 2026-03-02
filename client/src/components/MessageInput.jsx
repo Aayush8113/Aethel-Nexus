@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { IoCloseCircleOutline, IoAttachOutline, IoSend, IoColorWandOutline, IoDocumentTextOutline } from "react-icons/io5";
+import { IoCloseCircleOutline, IoAttachOutline, IoSend, IoGlobeOutline, IoDocumentTextOutline } from "react-icons/io5";
 import ImagePreview from "./ImagePreview";
 import VoiceInput from "./VoiceInput";
 import PromptMenu from "./PromptMenu";
@@ -8,8 +8,7 @@ import { estimateTokens, getTokenMetrics } from "../utils/tokenUtils";
 import { getCharCount, getWordCount } from "../utils/textStats";
 import { autoFormatInput } from "../utils/codeFormatUtils";
 
-// Renamed 'image' prop to 'file' to handle all docs
-const MessageInput = ({ input, setInput, isListening, startListening, isLoading, handleSend, isSpeaking, stopSpeaking, file, setFile, notifySuccess, sttLang, setSttLang }) => {
+const MessageInput = ({ input, setInput, isListening, startListening, isLoading, handleSend, isSpeaking, stopSpeaking, file, setFile, notifySuccess, sttLang, setSttLang, useWebSearch, setUseWebSearch }) => {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   
@@ -76,8 +75,6 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
 
   const currentTokens = estimateTokens(input);
   const { textColor: tokenColor } = getTokenMetrics(currentTokens);
-  
-  // Determine if file is an image or document
   const isImage = file && file.type.startsWith('image/');
 
   return (
@@ -88,7 +85,6 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
         
         {isSpeaking && (<button type="button" onClick={stopSpeaking} className="absolute -top-12 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg animate-bounce flex items-center gap-2 hover:bg-indigo-500 z-50 border border-white/20"><span>Listening to AI...</span><span className="opacity-75">(Click to Stop)</span></button>)}
 
-        {/* Dynamic File Preview */}
         {file && (
           <div className="px-2 pt-2">
              {isImage ? ( <ImagePreview file={file} onRemove={() => setFile(null)} /> ) : (
@@ -101,10 +97,13 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
         )}
 
         <div className="flex items-end gap-2 w-full">
-          {/* Accepts PDF, CSV, TXT, and Images */}
           <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*,.pdf,.csv,.txt" className="hidden" />
-          <button type="button" onClick={() => fileInputRef.current?.click()} className="mb-1 p-2 text-slate-400 hover:text-indigo-400 transition-colors hover:bg-slate-800 rounded-lg" disabled={isLoading} title="Attach Document or Image">
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="mb-1 p-2 text-slate-400 hover:text-indigo-400 transition-colors hover:bg-slate-800 rounded-lg" disabled={isLoading} title="Attach Document">
             <IoAttachOutline size={22} className="transform -rotate-45" />
+          </button>
+
+          <button type="button" onClick={() => { setUseWebSearch(!useWebSearch); if(notifySuccess) notifySuccess(`Web Search ${!useWebSearch ? 'ON' : 'OFF'}`); }} className={`mb-1 p-2 rounded-lg transition-all ${useWebSearch ? 'text-blue-400 bg-blue-500/10 border border-blue-500/30' : 'text-slate-400 hover:text-blue-400 hover:bg-slate-800'}`} disabled={isLoading} title="Toggle Live Web Search">
+            <IoGlobeOutline size={20} className={useWebSearch ? "animate-pulse" : ""} />
           </button>
 
           <button type="button" onClick={cycleLanguage} className="mb-1 p-2 text-xs font-bold text-slate-400 hover:text-emerald-400 transition-colors hover:bg-slate-800 rounded-lg" disabled={isLoading} title="Change Mic Language">
@@ -114,7 +113,7 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
           <div className="flex-shrink-0 mb-1"><VoiceInput isListening={isListening} onToggle={startListening} /></div>
 
           <div className="relative flex-1">
-            <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} placeholder={isListening ? "Listening..." : "Type '/' for commands or attach a PDF/CSV..."} rows={1} className={`w-full bg-transparent text-white pl-2 pr-10 py-3 resize-none outline-none overflow-y-auto text-sm md:text-base custom-scrollbar ${isListening ? "placeholder-red-400" : "placeholder-slate-500"}`} disabled={isLoading} />
+            <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} placeholder={isListening ? "Listening..." : useWebSearch ? "Ask anything (Searching the live web)..." : "Type '/' for commands or attach a PDF..."} rows={1} className={`w-full bg-transparent text-white pl-2 pr-10 py-3 resize-none outline-none overflow-y-auto text-sm md:text-base custom-scrollbar ${isListening ? "placeholder-red-400" : useWebSearch ? "placeholder-blue-400" : "placeholder-slate-500"}`} disabled={isLoading} />
           </div>
 
           {input && !isLoading && (<button type="button" onClick={() => { setInput(""); setShowPrompts(false); }} className="mb-3 text-slate-500 hover:text-red-400 transition-colors" title="Clear"><IoCloseCircleOutline size={20} /></button>)}
