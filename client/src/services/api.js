@@ -12,6 +12,7 @@ export const updateChatTitle = async (id, title) => {
   return res.json();
 };
 
+// Added useWebSearch to the payload
 export const sendMessageToAI = async (message, history, chatId, attachedFile, systemInstruction, useWebSearch) => {
   const formData = new FormData();
   formData.append('message', message);
@@ -19,15 +20,9 @@ export const sendMessageToAI = async (message, history, chatId, attachedFile, sy
   if (chatId) formData.append('chatId', chatId);
   if (attachedFile) formData.append('file', attachedFile);
   if (systemInstruction) formData.append('systemInstruction', systemInstruction);
-  if (useWebSearch) formData.append('useWebSearch', 'true');
+  if (useWebSearch) formData.append('useWebSearch', 'true'); // Send boolean as string
 
   const res = await fetch(`${API_URL}/chat`, { method: 'POST', body: formData });
-  
-  // 🟢 NEW: If backend sends a 429 or 500, extract the actual message and throw it to React
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
-  }
-  
+  if (!res.ok) throw new Error("API Error");
   return res.json();
 };
