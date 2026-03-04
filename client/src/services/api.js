@@ -12,7 +12,12 @@ export const updateChatTitle = async (id, title) => {
   return res.json();
 };
 
-// Added useWebSearch to the payload
+// 🟢 NEW: Search API Call
+export const searchGlobalChats = async (query) => {
+  const res = await fetch(`${API_URL}/chats/search?q=${encodeURIComponent(query)}`);
+  return res.json();
+};
+
 export const sendMessageToAI = async (message, history, chatId, attachedFile, systemInstruction, useWebSearch) => {
   const formData = new FormData();
   formData.append('message', message);
@@ -20,9 +25,12 @@ export const sendMessageToAI = async (message, history, chatId, attachedFile, sy
   if (chatId) formData.append('chatId', chatId);
   if (attachedFile) formData.append('file', attachedFile);
   if (systemInstruction) formData.append('systemInstruction', systemInstruction);
-  if (useWebSearch) formData.append('useWebSearch', 'true'); // Send boolean as string
+  if (useWebSearch) formData.append('useWebSearch', 'true');
 
   const res = await fetch(`${API_URL}/chat`, { method: 'POST', body: formData });
-  if (!res.ok) throw new Error("API Error");
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
+  }
   return res.json();
 };
