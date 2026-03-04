@@ -10,10 +10,12 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 const upload = multer({ dest: 'uploads/' });
 
-// Upgraded from upload.single('image') to upload.single('file')
 router.post('/chat', upload.single('file'), chatController.handleChat);
-
 router.get('/chats', chatController.getAllChats);
+
+// 🟢 NEW: Must be before :id
+router.get('/chats/search', chatController.searchAllChats);
+
 router.get('/chats/:id', chatController.getChatById);
 router.delete('/chats/:id', chatController.deleteChat);
 router.delete('/chats', chatController.deleteAllChats);
