@@ -17,11 +17,8 @@ exports.handleChat = async (req, res) => {
     let history = req.body.history ? JSON.parse(req.body.history) : [];
 
     const tools = [];
-    if (useWebSearch === 'true') {
-      tools.push({ googleSearch: {} }); 
-    }
+    if (useWebSearch === 'true') tools.push({ googleSearch: {} }); 
 
-    // 🟢 RESTORED: Back to your confirmed working model
     const modelOptions = { 
       model: "gemini-2.0-flash", 
       systemInstruction: systemInstruction ? { role: "system", parts: [{ text: systemInstruction }] } : undefined,
@@ -35,7 +32,6 @@ exports.handleChat = async (req, res) => {
       parts: [{ text: msg.content }]
     }));
 
-    // Keep history tight to save your API tokens and prevent 429 errors
     if (formattedHistory.length > 10) formattedHistory = formattedHistory.slice(-10);
     while (formattedHistory.length > 0 && formattedHistory[0].role !== 'user') formattedHistory.shift(); 
 
@@ -98,13 +94,12 @@ exports.handleChat = async (req, res) => {
 
   } catch (error) {
     console.error("AI Generation Error:", error);
-    
-    // 🟢 Safety Net: Gracefully handles quota limits without crashing your server
-    if (error.status === 429 || (error.message && error.message.includes('429'))) {
-        return res.status(429).json({ error: "Google API Quota Exceeded. Please wait a minute for the free tier to cool down." });
+    if (!res.headersSent) {
+      if (error.status === 429 || (error.message && error.message.includes('429'))) {
+          return res.status(429).json({ error: "Google Quota Exceeded. Please wait 15 seconds." });
+      }
+      return res.status(500).json({ error: error.message || 'Internal Server Error' });
     }
-    
-    res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 };
 
@@ -114,3 +109,20 @@ exports.deleteChat = async (req, res) => { try { await Chat.findByIdAndDelete(re
 exports.deleteAllChats = async (req, res) => { try { await Chat.deleteMany({}); res.json({ success: true }); } catch (err) { res.status(500).json({ error: 'Failed' }); } };
 exports.togglePinChat = async (req, res) => { try { const chat = await Chat.findById(req.params.id); chat.isPinned = !chat.isPinned; await chat.save(); res.json(chat); } catch (err) { res.status(500).json({ error: 'Failed' }); } };
 exports.updateChatTitle = async (req, res) => { try { const { title } = req.body; const chat = await Chat.findById(req.params.id); chat.title = title; await chat.save(); res.json(chat); } catch (err) { res.status(500).json({ error: 'Failed' }); } };
+
+// 🟢 NEW: Global Search API
+exports.searchAllChats = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) return res.json([]);
+    const chats = await Chat.find({
+      $or: [
+        { title: { $regex: q, $options: 'i' } },
+        { 'messages.content': { $regex: q, $options: 'i' } }
+      ]
+    }).sort({ updatedAt: -1 }).limit(15);
+    res.json(chats);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to search database' });
+  }
+};
