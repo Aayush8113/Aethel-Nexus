@@ -1,94 +1,113 @@
-import { useState, useRef, useEffect } from "react";
-import { IoChatboxOutline, IoAdd, IoCubeOutline, IoTrashOutline, IoSettingsOutline, IoHappyOutline, IoPin, IoCalendarOutline, IoCheckmarkOutline, IoCloseOutline } from "react-icons/io5";
-import SearchBar from "./SearchBar";
-import { useTouchSwipe } from "../hooks/useTouchSwipe";
-import PingIndicator from "./PingIndicator"; 
-import { categorizeChatsByDate } from "../utils/dateUtils"; 
+import { useState, useEffect } from "react";
+import { IoAdd, IoChatbubbleOutline, IoSettingsOutline, IoTrashOutline, IoPinOutline, IoPin, IoPeopleOutline, IoSearchOutline, IoClose } from "react-icons/io5";
+import { searchGlobalChats } from "../services/api";
 
-// FIX: Added `isDesktopSidebarOpen` as a prop
-const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, onDeleteChat, onTogglePin, onRenameChat, onClearAll, onOpenSettings, onOpenPersonas, isOpen, onClose, isLoading, isInstallable, installApp, isDesktopSidebarOpen }) => {
-  const [search, setSearch] = useState("");
+const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, isOpen, onClose, onDeleteChat, onTogglePin, onClearAll, onRenameChat, onOpenSettings, onOpenPersonas, isInstallable, installApp, isDesktopSidebarOpen }) => {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
-  const searchInputRef = useRef(null);
-  const editInputRef = useRef(null);
-
-  const swipeHandlers = useTouchSwipe({ onSwipeLeft: () => { if (isOpen && onClose) onClose(); } });
+  
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
-    const handleKeyDown = (e) => { if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey && !editingId) { e.preventDefault(); searchInputRef.current?.focus(); } };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editingId]);
+    const handleSearch = async () => {
+      if (searchQuery.length > 2) {
+        setIsSearching(true);
+        const results = await searchGlobalChats(searchQuery);
+        setSearchResults(results);
+        setIsSearching(false);
+      } else {
+        setSearchResults([]);
+      }
+    };
+    const timeoutId = setTimeout(handleSearch, 400); 
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
-  useEffect(() => { if (editingId && editInputRef.current) editInputRef.current.focus(); }, [editingId]);
+  const displayChats = searchQuery.length > 2 ? searchResults : chats;
+  const pinnedChats = displayChats.filter(c => c.isPinned);
+  const unpinnedChats = displayChats.filter(c => !c.isPinned);
 
-  const handleSaveRename = (id) => {
-    if (editTitle.trim() && onRenameChat) onRenameChat(id, editTitle.trim());
+  const startEdit = (e, chat) => { e.stopPropagation(); setEditingId(chat._id); setEditTitle(chat.title); };
+  
+  const submitEdit = (e, id) => {
+    e.preventDefault(); e.stopPropagation();
+    if (editTitle.trim()) { onRenameChat(id, editTitle.trim()); }
     setEditingId(null);
   };
 
-  const filteredChats = chats.filter(chat => chat.title.toLowerCase().includes(search.toLowerCase()));
-  const pinnedChats = filteredChats.filter(chat => chat.isPinned);
-  const unpinnedChats = filteredChats.filter(chat => !chat.isPinned);
-  const { today, week, older } = categorizeChatsByDate(unpinnedChats);
-
-  const renderChatList = (list, title, icon) => {
-    if (list.length === 0) return null;
-    return (
-      <div className="mb-6">
-        <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-2 flex items-center gap-2">{icon} {title}</h3>
-        <div className="space-y-1">
-          {list.map((chat) => (
-            <div key={chat._id} className="relative group">
-              {editingId === chat._id ? (
-                 <div className="w-full flex items-center bg-slate-800 rounded-lg p-1 border border-indigo-500 shadow-lg z-20 relative">
-                    <input ref={editInputRef} type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} onKeyDown={(e) => { if(e.key==='Enter') handleSaveRename(chat._id); if(e.key==='Escape') setEditingId(null); }} className="w-full bg-transparent text-white text-sm outline-none px-2 py-1" />
-                    <button onClick={() => handleSaveRename(chat._id)} className="p-1 text-green-400 hover:text-green-300"><IoCheckmarkOutline size={16}/></button>
-                    <button onClick={() => setEditingId(null)} className="p-1 text-slate-400 hover:text-red-400"><IoCloseOutline size={16}/></button>
-                 </div>
-              ) : (
-                <button onClick={() => onSelectChat(chat._id)} onDoubleClick={() => { setEditingId(chat._id); setEditTitle(chat.title); }} className={`w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all ${activeChatId === chat._id ? "bg-slate-800 text-indigo-300 border border-slate-700 shadow-sm" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"}`}>
-                  <div className={`transition-colors ${chat.isPinned ? "text-indigo-400" : "text-slate-500"}`}>{chat.isPinned ? <IoPin size={14} /> : <IoChatboxOutline size={16} />}</div>
-                  <span className="pr-12 text-sm font-medium truncate select-none">{chat.title}</span>
-                </button>
-              )}
-              {!editingId && (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10 bg-slate-900/90 backdrop-blur rounded px-1 py-0.5 border border-slate-800">
-                  <button onClick={(e) => { e.stopPropagation(); onTogglePin(chat._id); }} className="p-1.5 text-slate-500 hover:text-indigo-400" title={chat.isPinned ? "Unpin" : "Pin"}><IoPin size={13} /></button>
-                  <button onClick={(e) => { e.stopPropagation(); onDeleteChat(chat._id); }} className="p-1.5 text-slate-500 hover:text-red-400" title="Delete"><IoTrashOutline size={13} /></button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+  const renderChatItem = (chat) => (
+    <div key={chat._id} className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200 ${activeChatId === chat._id ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30" : "hover:bg-slate-800 text-slate-300 border border-transparent"}`} onClick={() => onSelectChat(chat._id)}>
+      <div className="flex items-center gap-3 overflow-hidden flex-1">
+        <IoChatbubbleOutline className={`flex-shrink-0 ${activeChatId === chat._id ? "text-indigo-400" : "text-slate-500"}`} size={18} />
+        {editingId === chat._id ? (
+          <form onSubmit={(e) => submitEdit(e, chat._id)} className="w-full">
+            <input autoFocus type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} onBlur={(e) => submitEdit(e, chat._id)} onClick={(e) => e.stopPropagation()} className="w-full bg-slate-900 text-white px-2 py-1 rounded text-sm border border-indigo-500 outline-none" />
+          </form>
+        ) : (
+          <span className="truncate text-sm font-medium">{chat.title}</span>
+        )}
       </div>
-    );
-  };
-
-  return (
-    <div {...swipeHandlers} className={`fixed inset-y-0 left-0 z-30 w-72 bg-slate-900/95 backdrop-blur-2xl border-r border-slate-800 transform transition-transform duration-300 ease-in-out print:hidden ${isOpen ? "translate-x-0" : "-translate-x-full"} md:relative ${isDesktopSidebarOpen !== false ? "md:translate-x-0" : "md:-translate-x-full"} flex flex-col h-full`}>
-      <div className="flex flex-col h-full p-4">
-        <div className="flex items-center gap-3 mb-6 px-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20"><IoCubeOutline size={20} className="text-white" /></div>
-          <h1 className="text-xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">Aethel</h1>
-        </div>
-        <SearchBar ref={searchInputRef} value={search} onChange={setSearch} />
-        <button onClick={onNewChat} className="flex items-center justify-center gap-2 w-full px-4 py-2.5 mb-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all shadow-lg font-medium text-sm"><IoAdd size={18} /><span>New Chat</span></button>
-        <div className="flex-1 pr-1 -mr-2 overflow-y-auto custom-scrollbar">
-          {isLoading ? (<div className="px-2 mt-2 space-y-3"><div className="w-full h-10 rounded-lg bg-slate-800/50 animate-pulse"></div></div>) : chats.length === 0 ? (<div className="flex flex-col items-center justify-center h-40 px-4 mt-8 text-center opacity-50"><IoChatboxOutline size={32} className="mb-2 text-slate-600" /><p className="text-sm italic text-slate-500 mt-2">No history found.</p></div>) : (
-            <> {renderChatList(pinnedChats, "Pinned", <IoPin className="text-indigo-400" size={10} />)} {search ? renderChatList(filteredChats, "Search Results", <IoSearch size={10} />) : (<>{renderChatList(today, "Today", <IoCalendarOutline size={10} />)}{renderChatList(week, "Previous 7 Days", <IoCalendarOutline size={10} />)}{renderChatList(older, "Older", <IoCalendarOutline size={10} />)}</>)}</>
-          )}
-        </div>
-        <div className="pt-4 mt-4 space-y-1 border-t border-slate-800/50">
-          {isInstallable && (<button onClick={installApp} className="flex items-center justify-center gap-2 w-full px-4 py-2 mb-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 text-white rounded-lg shadow-lg font-bold text-xs transition-all"><IoCubeOutline /><span>Install App</span></button>)}
-          {chats.length > 0 && (<button onClick={onClearAll} className="flex items-center w-full gap-3 p-2 px-3 mb-2 transition-colors border border-transparent rounded-lg hover:bg-red-500/10 group"><div className="text-slate-500 group-hover:text-red-400"><IoTrashOutline size={16} /></div><span className="text-xs font-medium text-slate-500 group-hover:text-red-400">Clear History</span></button>)}
-          <button onClick={onOpenPersonas} className="flex items-center w-full gap-3 p-2 px-2 transition-colors rounded-lg hover:bg-slate-800 group"><div className="p-1.5 bg-slate-800 group-hover:bg-slate-700 rounded-lg text-slate-400 group-hover:text-indigo-400 transition-colors"><IoHappyOutline size={16} /></div><div className="text-left"><p className="text-xs font-medium text-slate-300 group-hover:text-white transition-colors">Persona</p></div></button>
-          <button onClick={onOpenSettings} className="flex items-center w-full gap-3 p-2 px-2 transition-colors rounded-lg hover:bg-slate-800 group"><div className="p-1.5 bg-slate-800 group-hover:bg-slate-700 rounded-lg text-slate-400 group-hover:text-indigo-400 transition-colors"><IoSettingsOutline size={16} /></div><div className="text-left"><p className="text-xs font-medium text-slate-300 group-hover:text-white transition-colors">Settings</p></div></button>
-          <div className="px-3 pt-2 mt-1 border-t border-slate-800/50"><PingIndicator /></div>
-        </div>
+      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+        {!searchQuery && <button onClick={(e) => { e.stopPropagation(); onTogglePin(chat._id); }} className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-700 rounded-lg transition-colors">{chat.isPinned ? <IoPin size={14} className="text-amber-400"/> : <IoPinOutline size={14}/>}</button>}
+        <button onClick={(e) => startEdit(e, chat)} className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-700 rounded-lg transition-colors"><IoChatbubbleOutline size={14} /></button>
+        <button onClick={(e) => { e.stopPropagation(); onDeleteChat(chat._id); }} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg transition-colors"><IoTrashOutline size={14} /></button>
       </div>
     </div>
   );
+
+  return (
+    <>
+      <div className={`fixed inset-y-0 left-0 w-72 bg-slate-950/95 backdrop-blur-xl border-r border-slate-800/50 transform transition-transform duration-300 ease-in-out z-40 flex flex-col shadow-2xl ${isOpen || isDesktopSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
+        <div className="p-4 flex flex-col gap-3 border-b border-slate-800/50">
+          <button onClick={onNewChat} className="flex items-center justify-center gap-2 w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-indigo-500/25 active:scale-95">
+            <IoAdd size={20} /> New Workspace
+          </button>
+
+          <div className="relative">
+            <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+            <input type="text" placeholder="Search all conversations..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-slate-900 border border-slate-800 text-slate-200 text-sm rounded-lg pl-9 pr-8 py-2 outline-none focus:border-indigo-500 transition-colors" />
+            {searchQuery && <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"><IoClose size={16}/></button>}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-3 space-y-6 custom-scrollbar">
+          {searchQuery && (
+            <div>
+               <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 px-2 flex justify-between">Search Results {isSearching && <span className="animate-pulse">...</span>}</h3>
+               {searchResults.length === 0 && !isSearching ? <p className="text-xs text-slate-500 px-2 italic">No matches found.</p> : searchResults.map(renderChatItem)}
+            </div>
+          )}
+
+          {!searchQuery && pinnedChats.length > 0 && (
+            <div>
+              <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 px-2">Pinned Workspaces</h3>
+              <div className="space-y-1">{pinnedChats.map(renderChatItem)}</div>
+            </div>
+          )}
+          
+          {!searchQuery && (
+            <div>
+              <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 px-2">Recent History</h3>
+              {unpinnedChats.length === 0 ? <p className="text-xs text-slate-500 px-2 italic">No recent chats.</p> : <div className="space-y-1">{unpinnedChats.map(renderChatItem)}</div>}
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 border-t border-slate-800/50 bg-slate-900/30 flex flex-col gap-2">
+          {isInstallable && (<button onClick={installApp} className="w-full py-2.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl text-sm font-bold transition-all border border-blue-500/30">Install App</button>)}
+          <div className="flex gap-2">
+            <button onClick={onOpenPersonas} className="flex-1 py-2.5 flex items-center justify-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors border border-slate-800"><IoPeopleOutline size={18} /> Personas</button>
+            <button onClick={onOpenSettings} className="flex-1 py-2.5 flex items-center justify-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors border border-slate-800"><IoSettingsOutline size={18} /> Settings</button>
+          </div>
+          <button onClick={onClearAll} className="flex items-center justify-center gap-2 w-full py-2 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-xl text-xs font-bold transition-colors mt-2"><IoTrashOutline size={16} /> Clear All History</button>
+        </div>
+      </div>
+      {isOpen && !isDesktopSidebarOpen && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden animate-fade-in" onClick={onClose} />}
+    </>
+  );
 };
+
 export default Sidebar;
