@@ -8,6 +8,7 @@ import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw"; 
 
 import CodeBlock from "./CodeBlock";
+import MermaidBlock from "./MermaidBlock"; // NEW: Mermaid Integration
 import TypingIndicator from "./TypingIndicator";
 import MessageInput from "./MessageInput";
 import SpeakerButton from "./SpeakerButton";
@@ -73,7 +74,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       const lastMsg = messages[messages.length - 1];
       if (lastMsg.role === "model" && !isSpeaking) { setTimeout(() => { speak(lastMsg.content); setReadingMsgId(messages.length - 1); }, 500); }
     }
-  }, [messages, isLoading, isAutoRead]);
+  }, [messages, isLoading, isAutoRead, isSpeaking, speak]);
 
   useEffect(() => { if (transcript) { setInput((prev) => prev + (prev ? " " : "") + transcript); resetTranscript(); } }, [transcript, resetTranscript, setInput]);
 
@@ -126,7 +127,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       const response = await sendMessageToAI(editText, newHistory, activeChatId, null, finalSystemInstruction, useWebSearch);
       setMessages(prev => [...prev, { role: "model", content: response.reply, createdAt: Date.now() }]);
       if (!activeChatId && response.chatId) onChatUpdated();
-    } catch (err) { notifyError("Failed to branch conversation."); } finally { setIsLoading(false); }
+    } catch (err) { notifyError(err.message || "Failed to branch conversation."); } finally { setIsLoading(false); }
   };
 
   const handleRegenerate = async () => {
@@ -141,7 +142,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       const response = await sendMessageToAI(userMessage.content, newHistory.slice(0, -1), activeChatId, null, finalSystemInstruction, useWebSearch);
       setMessages([...newHistory, { role: "model", content: response.reply, createdAt: Date.now() }]);
       if (!activeChatId && response.chatId) onChatUpdated();
-    } catch (err) { notifyError("Failed to regenerate response."); } finally { setIsLoading(false); }
+    } catch (err) { notifyError(err.message || "Failed to regenerate response."); } finally { setIsLoading(false); }
   };
 
   const handleSend = async (e) => {
@@ -162,7 +163,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
       const response = await sendMessageToAI(textToSend, messages, activeChatId, fileToSend, finalSystemInstruction, useWebSearch);
       setMessages((prev) => [...prev, { role: "model", content: response.reply, createdAt: Date.now() }]);
       if (!activeChatId && response.chatId) onChatUpdated();
-    } catch (err) { notifyError("Connection Error"); } finally { setIsLoading(false); }
+    } catch (err) { notifyError(err.message || "Connection Error"); } finally { setIsLoading(false); }
   };
 
   const displayedMessages = searchQuery ? messages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase())) : messages;
@@ -210,7 +211,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
               <div className={`max-w-[85%] md:max-w-[85%] rounded-2xl p-4 shadow-sm group relative ${msg.role === "user" ? "bg-slate-800 text-white border border-slate-700 rounded-tr-sm" : "bg-transparent text-slate-200 border border-slate-800/50 rounded-tl-sm w-full"}`}>
                 {msg.image && (
                   <div className="mb-3 overflow-hidden rounded-lg border border-slate-700 cursor-zoom-in" onClick={() => setLightboxSrc(msg.image)}>
-                    <img src={msg.image} className="max-h-60 w-auto object-contain bg-black/20" />
+                    <img src={msg.image} className="max-h-60 w-auto object-contain bg-black/20" alt="Uploaded" />
                   </div>
                 )}
                 
@@ -223,7 +224,17 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
                       components={{
                         code({node, className, children, ...props}) {
                           const match = /language-(\w+)/.exec(className || '');
-                          return match ? (<CodeBlock language={match[1]} value={String(children).replace(/\n$/, '')} onOpenArtifact={onOpenArtifact} />) : (<code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono" onDoubleClick={() => setRawViewId(rawIndex)} {...props}>{children}</code>)
+                          const codeString = String(children).replace(/\n$/, '');
+                          
+                          if (match && match[1] === 'mermaid') {
+                            return <MermaidBlock chart={codeString} />;
+                          }
+                          
+                          return match ? (
+                            <CodeBlock language={match[1]} value={codeString} onOpenArtifact={onOpenArtifact} />
+                          ) : (
+                            <code className="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono" onDoubleClick={() => setRawViewId(rawIndex)} {...props}>{children}</code>
+                          )
                         },
                         blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-indigo-500 bg-slate-900/50 py-2 px-4 my-4 rounded-r-lg text-slate-300 italic shadow-sm" {...props} />
                       }}
