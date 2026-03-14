@@ -12,14 +12,14 @@ const upload = multer({ dest: 'uploads/' });
 
 router.post('/chat', upload.single('file'), chatController.handleChat);
 router.get('/chats', chatController.getAllChats);
-
-// 🟢 NEW: Must be before :id
 router.get('/chats/search', chatController.searchAllChats);
-
 router.get('/chats/:id', chatController.getChatById);
 router.delete('/chats/:id', chatController.deleteChat);
 router.delete('/chats', chatController.deleteAllChats);
 router.put('/chats/:id/pin', chatController.togglePinChat);
 router.put('/chats/:id/title', chatController.updateChatTitle);
+
+// 🟢 DAY 34: Exposed Fork Route
+router.post('/chats/:id/fork', chatController.forkChat);
 
 module.exports = router;
