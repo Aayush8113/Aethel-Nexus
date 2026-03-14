@@ -1,4 +1,4 @@
-import { IoTerminalOutline, IoTrashOutline, IoCloseOutline } from "react-icons/io5";
+import { IoTerminalOutline, IoTrashOutline, IoCloseOutline, IoTimeOutline } from "react-icons/io5";
 import { useEffect, useRef } from "react";
 
 const ConsoleOutput = ({ output, onClear, onClose }) => {
@@ -19,8 +19,8 @@ const ConsoleOutput = ({ output, onClear, onClose }) => {
           <span className="text-xs font-bold uppercase tracking-widest text-white">Execution Console</span>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={onClear} className="text-slate-500 hover:text-white transition-colors flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold" title="Clear Console">
-            <IoTrashOutline size={14} /> Clear
+          <button onClick={onClear} className="text-slate-500 hover:text-white transition-colors flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold" title="Clear Console History">
+            <IoTrashOutline size={14} /> Clear History
           </button>
           <div className="w-px h-4 bg-slate-700"></div>
           <button onClick={onClose} className="text-slate-500 hover:text-red-400 transition-colors" title="Close Console">
@@ -28,13 +28,21 @@ const ConsoleOutput = ({ output, onClear, onClose }) => {
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar text-xs md:text-sm">
+      
+      <div className="flex-1 overflow-y-auto p-3 space-y-4 custom-scrollbar text-xs md:text-sm">
         {output.length === 0 ? (
           <span className="text-slate-600 italic">Awaiting execution...</span>
         ) : (
-          output.map((line, i) => (
-            <div key={i} className={`whitespace-pre-wrap break-words ${line.startsWith('❌ Error:') ? 'text-red-400 bg-red-500/10 p-1.5 rounded border border-red-500/20' : 'text-emerald-400 leading-relaxed'}`}>
-              <span className="opacity-50 select-none mr-2">❯</span> {line}
+          output.map((run, runIndex) => (
+            <div key={runIndex} className="space-y-1.5 animate-fade-in">
+              <div className="flex items-center gap-2 text-[10px] text-slate-500 border-b border-slate-800/50 pb-1 mb-2">
+                 <IoTimeOutline size={12} /> Executed at {run.timestamp}
+              </div>
+              {run.logs.map((line, i) => (
+                <div key={i} className={`whitespace-pre-wrap break-words ${line.startsWith('❌ Error:') ? 'text-red-400 bg-red-500/10 p-1.5 rounded border border-red-500/20' : 'text-emerald-400 leading-relaxed'}`}>
+                  <span className="opacity-50 select-none mr-2">❯</span> {line}
+                </div>
+              ))}
             </div>
           ))
         )}
