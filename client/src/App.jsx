@@ -48,6 +48,9 @@ function App() {
   const [customPrompt, setCustomPrompt] = useLocalStorage("aethel_custom_prompt", ""); 
   const [sttLang, setSttLang] = useLocalStorage("aethel_stt_lang", "en-US");
   const [useWebSearch, setUseWebSearch] = useLocalStorage("aethel_websearch", false); 
+  
+  // 🟢 DAY 35: Global Model State
+  const [activeModel, setActiveModel] = useLocalStorage("aethel_model", "gemini-2.0-flash");
 
   const isOnline = useOnlineStatus();
   const { success, error: notifyError } = useNotify();
@@ -165,13 +168,14 @@ function App() {
              onOpenSettings={() => setIsSettingsOpen(true)} onOpenPersonas={() => setIsPersonaOpen(true)}
              isInstallable={isInstallable} installApp={installApp}
              isDesktopSidebarOpen={isDesktopSidebarOpen} 
-             reloadChats={loadChats} // 🟢 DAY 34: Passed down to Sidebar
+             reloadChats={loadChats}
            />
         </div>
 
         <div className="flex-1 relative h-full flex transition-all duration-300 overflow-hidden bg-slate-950">
           <div className={`relative h-full flex flex-col transition-all duration-500 ease-in-out ${isArtifactOpen ? "hidden lg:flex w-full lg:w-1/2 border-r border-slate-800 print:w-full print:border-none" : "w-full"}`}>
             
+            {/* 🟢 DAY 35: Passed activeModel state down */}
             <ChatInterface 
               activeChatId={activeChatId} onChatUpdated={loadChats} speak={speak} stop={stop} isSpeaking={isSpeaking} isAutoRead={isAutoRead}
               systemInstruction={currentPersona.instruction} customPrompt={customPrompt} currentPersona={currentPersona}
@@ -179,6 +183,7 @@ function App() {
               onImportBackup={handleRestoreSystem} toggleBookmark={toggleBookmark} isBookmarked={isBookmarked} onToggleBookmarks={() => setIsBookmarksOpen(true)}
               onToggleDesktopSidebar={toggleDesktopSidebar} sttLang={sttLang} setSttLang={setSttLang}
               useWebSearch={useWebSearch} setUseWebSearch={setUseWebSearch} 
+              activeModel={activeModel} setActiveModel={setActiveModel}
             />
           </div>
 
