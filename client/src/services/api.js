@@ -12,9 +12,15 @@ export const updateChatTitle = async (id, title) => {
   return res.json();
 };
 
-// 🟢 NEW: Search API Call
 export const searchGlobalChats = async (query) => {
   const res = await fetch(`${API_URL}/chats/search?q=${encodeURIComponent(query)}`);
+  return res.json();
+};
+
+// 🟢 DAY 34: Forking Fetch Call
+export const forkChat = async (id) => {
+  const res = await fetch(`${API_URL}/chats/${id}/fork`, { method: 'POST' });
+  if (!res.ok) throw new Error("Failed to fork chat");
   return res.json();
 };
 
