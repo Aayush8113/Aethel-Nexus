@@ -110,7 +110,6 @@ exports.deleteAllChats = async (req, res) => { try { await Chat.deleteMany({}); 
 exports.togglePinChat = async (req, res) => { try { const chat = await Chat.findById(req.params.id); chat.isPinned = !chat.isPinned; await chat.save(); res.json(chat); } catch (err) { res.status(500).json({ error: 'Failed' }); } };
 exports.updateChatTitle = async (req, res) => { try { const { title } = req.body; const chat = await Chat.findById(req.params.id); chat.title = title; await chat.save(); res.json(chat); } catch (err) { res.status(500).json({ error: 'Failed' }); } };
 
-// 🟢 NEW: Global Search API
 exports.searchAllChats = async (req, res) => {
   try {
     const { q } = req.query;
@@ -124,5 +123,25 @@ exports.searchAllChats = async (req, res) => {
     res.json(chats);
   } catch (err) {
     res.status(500).json({ error: 'Failed to search database' });
+  }
+};
+
+// 🟢 DAY 34: Chat Forking Logic
+exports.forkChat = async (req, res) => {
+  try {
+    const originalChat = await Chat.findById(req.params.id);
+    if (!originalChat) return res.status(404).json({ error: 'Chat not found' });
+
+    const newChat = new Chat({
+      title: `${originalChat.title} (Fork)`,
+      isPinned: false,
+      messages: originalChat.messages
+    });
+
+    await newChat.save();
+    res.json(newChat);
+  } catch (err) {
+    console.error("Fork Error:", err);
+    res.status(500).json({ error: 'Failed to fork workspace' });
   }
 };
