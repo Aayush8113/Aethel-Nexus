@@ -47,7 +47,7 @@ function App() {
   const [currentPersona, setCurrentPersona] = useLocalStorage("aethel_persona", PERSONAS[0]);
   const [customPrompt, setCustomPrompt] = useLocalStorage("aethel_custom_prompt", ""); 
   const [sttLang, setSttLang] = useLocalStorage("aethel_stt_lang", "en-US");
-  const [useWebSearch, setUseWebSearch] = useLocalStorage("aethel_websearch", false); // NEW STATE
+  const [useWebSearch, setUseWebSearch] = useLocalStorage("aethel_websearch", false); 
 
   const isOnline = useOnlineStatus();
   const { success, error: notifyError } = useNotify();
@@ -165,6 +165,7 @@ function App() {
              onOpenSettings={() => setIsSettingsOpen(true)} onOpenPersonas={() => setIsPersonaOpen(true)}
              isInstallable={isInstallable} installApp={installApp}
              isDesktopSidebarOpen={isDesktopSidebarOpen} 
+             reloadChats={loadChats} // 🟢 DAY 34: Passed down to Sidebar
            />
         </div>
 
@@ -177,7 +178,7 @@ function App() {
               onOpenArtifact={openArtifact} isFocusMode={isFocusMode} onToggleFocus={() => setIsFocusMode(!isFocusMode)}
               onImportBackup={handleRestoreSystem} toggleBookmark={toggleBookmark} isBookmarked={isBookmarked} onToggleBookmarks={() => setIsBookmarksOpen(true)}
               onToggleDesktopSidebar={toggleDesktopSidebar} sttLang={sttLang} setSttLang={setSttLang}
-              useWebSearch={useWebSearch} setUseWebSearch={setUseWebSearch} // <-- Web search state
+              useWebSearch={useWebSearch} setUseWebSearch={setUseWebSearch} 
             />
           </div>
 
