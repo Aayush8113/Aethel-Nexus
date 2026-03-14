@@ -23,7 +23,7 @@ import ChatAnalyticsModal from "./ChatAnalyticsModal";
 
 import { useNotify } from "../hooks/useNotify";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { downloadChatAsMarkdown, downloadChatAsJSON } from "../utils/exportUtils";
+import { downloadChatAsMarkdown, downloadChatAsJSON, downloadChatAsPDF } from "../utils/exportUtils";
 import { importChatFromJSON } from "../utils/importUtils"; 
 import { useDragDrop } from "../hooks/useDragDrop"; 
 import { useSmartScroll } from "../hooks/useSmartScroll"; 
@@ -31,10 +31,9 @@ import { useChatSearch } from "../hooks/useChatSearch";
 import { useInputDraft } from "../hooks/useInputDraft"; 
 import { getReadTime, generateChatAnalytics } from "../utils/analyticsUtils"; 
 
-// 🟢 DAY 35: Added activeModel, setActiveModel props
 const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus, onImportBackup, toggleBookmark, isBookmarked, onToggleBookmarks, onToggleDesktopSidebar, sttLang, setSttLang, useWebSearch, setUseWebSearch, activeModel, setActiveModel }) => {
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useInputDraft(activeChatId);
+  const [input, setInput] = useInputDraft(activeChatId); // Feature: Persistent Drafts
   const [file, setFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [readingMsgId, setReadingMsgId] = useState(null);
@@ -109,6 +108,8 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
 
   const handleExportMarkdown = () => downloadChatAsMarkdown("Aethel_Chat", messages);
   const handleExportJSON = () => downloadChatAsJSON("Aethel_Chat", messages);
+  const handleExportPDF = () => downloadChatAsPDF("Aethel_Chat", messages);
+
   const handleCopyAll = () => { navigator.clipboard.writeText(messages.map(m => `${m.role.toUpperCase()}:\n${m.content}`).join("\n\n---\n\n")); success("Copied to clipboard!"); };
   const handleCopyMessage = (content) => { navigator.clipboard.writeText(content); success("Message copied!"); };
 
@@ -125,7 +126,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     setMessages([...newHistory, { role: "user", content: editText, createdAt: Date.now() }]);
     setEditingMsgId(null); setIsLoading(true);
     try {
-      // 🟢 DAY 35: Pass activeModel
       const response = await sendMessageToAI(editText, newHistory, activeChatId, null, finalSystemInstruction, useWebSearch, activeModel);
       setMessages(prev => [...prev, { role: "model", content: response.reply, createdAt: Date.now() }]);
       if (!activeChatId && response.chatId) onChatUpdated();
@@ -141,7 +141,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     const newHistory = messages.slice(0, lastUserIndex + 1); 
     setMessages(newHistory); setIsLoading(true); stop();
     try {
-      // 🟢 DAY 35: Pass activeModel
       const response = await sendMessageToAI(userMessage.content, newHistory.slice(0, -1), activeChatId, null, finalSystemInstruction, useWebSearch, activeModel);
       setMessages([...newHistory, { role: "model", content: response.reply, createdAt: Date.now() }]);
       if (!activeChatId && response.chatId) onChatUpdated();
@@ -163,7 +162,6 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     const fileToSend = file; 
     setInput(""); setFile(null); setIsLoading(true);
     try {
-      // 🟢 DAY 35: Pass activeModel
       const response = await sendMessageToAI(textToSend, messages, activeChatId, fileToSend, finalSystemInstruction, useWebSearch, activeModel);
       setMessages((prev) => [...prev, { role: "model", content: response.reply, createdAt: Date.now() }]);
       if (!activeChatId && response.chatId) onChatUpdated();
@@ -177,8 +175,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     <div className={`flex flex-col h-full bg-slate-950 text-slate-100 relative w-full chat-container ${focusedMsgId !== null ? 'has-focus' : ''}`}>
       <DragOverlay isDragging={isDragging} /> 
 
-      {/* 🟢 DAY 35: Passed activeModel state to ChatHeader */}
-      <ChatHeader currentPersona={currentPersona} onExportMarkdown={handleExportMarkdown} onExportJSON={handleExportJSON} onCopyAll={handleCopyAll} onImportJSON={handleImportJSON} onImportBackup={onImportBackup} onOpenAnalytics={() => setIsAnalyticsOpen(true)} isFocusMode={isFocusMode} onToggleFocus={onToggleFocus} hasCustomPrompt={!!customPrompt} onToggleSearch={toggleSearch} isSearchOpen={isSearchOpen} onToggleBookmarks={onToggleBookmarks} onToggleDesktopSidebar={onToggleDesktopSidebar} activeModel={activeModel} setActiveModel={setActiveModel} />
+      <ChatHeader currentPersona={currentPersona} onExportMarkdown={handleExportMarkdown} onExportJSON={handleExportJSON} onExportPDF={handleExportPDF} onCopyAll={handleCopyAll} onImportJSON={handleImportJSON} onImportBackup={onImportBackup} onOpenAnalytics={() => setIsAnalyticsOpen(true)} isFocusMode={isFocusMode} onToggleFocus={onToggleFocus} hasCustomPrompt={!!customPrompt} onToggleSearch={toggleSearch} isSearchOpen={isSearchOpen} onToggleBookmarks={onToggleBookmarks} onToggleDesktopSidebar={onToggleDesktopSidebar} activeModel={activeModel} setActiveModel={setActiveModel} />
       
       <ChatAnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} metrics={currentMetrics} />
       <InChatSearch isOpen={isSearchOpen} query={searchQuery} setQuery={setSearchQuery} onClose={toggleSearch} matchCount={displayedMessages.length} />
