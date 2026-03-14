@@ -1,38 +1,45 @@
-import { IoClose, IoKey } from "react-icons/io5";
+import { IoClose, IoKeyboardOutline, IoFlashOutline } from "react-icons/io5";
 
 const ShortcutsModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const shortcuts = [
-    { key: "/", desc: "Search History" },
-    { key: "n", desc: "New Chat" },
-    { key: "s", desc: "Open Settings" },
-    { key: "p", desc: "Change Persona" },
-    { key: "Esc", desc: "Close Panels" },
-    { key: "?", desc: "Show Shortcuts" },
+    { key: "n", description: "Start new workspace" },
+    { key: "f", description: "Toggle Focus Mode (Hide UI)" },
+    { key: "s", description: "Open System Settings" },
+    { key: "p", description: "Open Persona Builder" },
+    { key: "b", description: "Toggle Bookmarks Panel" },
+    { key: "?", description: "Open this Shortcuts Menu" },
+    { key: "Esc", description: "Close active modal / panel" },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-4" onClick={onClose}>
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-4" onClick={onClose}>
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        
+        <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <IoKey className="text-indigo-400"/> Keyboard Shortcuts
+            <IoKeyboardOutline className="text-indigo-400"/> Keyboard Shortcuts
           </h2>
-          <button onClick={onClose}><IoClose size={24} className="text-slate-400 hover:text-white"/></button>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors"><IoClose size={24} /></button>
         </div>
-        <div className="space-y-3">
-          {shortcuts.map((s) => (
-            <div key={s.key} className="flex justify-between items-center text-sm group">
-              <span className="text-slate-300 group-hover:text-white transition-colors">{s.desc}</span>
-              <kbd className="bg-slate-800 border border-slate-700 px-2 py-1 rounded text-slate-400 font-mono font-bold min-w-[30px] text-center shadow-sm group-hover:border-indigo-500/50 transition-colors">
-                {s.key}
-              </kbd>
-            </div>
-          ))}
-        </div>
-        <div className="mt-6 text-center text-xs text-slate-600">
-           Press <span className="font-mono text-indigo-400">?</span> anytime to see this menu.
+        
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-6 p-3 bg-indigo-600/10 border border-indigo-500/20 rounded-xl text-indigo-300 text-xs leading-relaxed">
+            <IoFlashOutline size={20} className="flex-shrink-0 text-indigo-400" />
+            Navigate Aethel-Nexus like a power user. Ensure you are not focused inside an input field when using these shortcuts.
+          </div>
+
+          <div className="space-y-2">
+            {shortcuts.map((shortcut, index) => (
+              <div key={index} className="flex justify-between items-center p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:bg-slate-800 transition-colors">
+                <span className="text-sm text-slate-300 font-medium">{shortcut.description}</span>
+                <kbd className="px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs font-mono text-emerald-400 shadow-inner tracking-widest font-bold">
+                  {shortcut.key}
+                </kbd>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
