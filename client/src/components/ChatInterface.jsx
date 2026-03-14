@@ -8,7 +8,7 @@ import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw"; 
 
 import CodeBlock from "./CodeBlock";
-import MermaidBlock from "./MermaidBlock"; // NEW: Mermaid Integration
+import MermaidBlock from "./MermaidBlock"; 
 import TypingIndicator from "./TypingIndicator";
 import MessageInput from "./MessageInput";
 import SpeakerButton from "./SpeakerButton";
@@ -31,7 +31,8 @@ import { useChatSearch } from "../hooks/useChatSearch";
 import { useInputDraft } from "../hooks/useInputDraft"; 
 import { getReadTime, generateChatAnalytics } from "../utils/analyticsUtils"; 
 
-const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus, onImportBackup, toggleBookmark, isBookmarked, onToggleBookmarks, onToggleDesktopSidebar, sttLang, setSttLang, useWebSearch, setUseWebSearch }) => {
+// 🟢 DAY 35: Added activeModel, setActiveModel props
+const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus, onImportBackup, toggleBookmark, isBookmarked, onToggleBookmarks, onToggleDesktopSidebar, sttLang, setSttLang, useWebSearch, setUseWebSearch, activeModel, setActiveModel }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useInputDraft(activeChatId);
   const [file, setFile] = useState(null);
@@ -124,7 +125,8 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     setMessages([...newHistory, { role: "user", content: editText, createdAt: Date.now() }]);
     setEditingMsgId(null); setIsLoading(true);
     try {
-      const response = await sendMessageToAI(editText, newHistory, activeChatId, null, finalSystemInstruction, useWebSearch);
+      // 🟢 DAY 35: Pass activeModel
+      const response = await sendMessageToAI(editText, newHistory, activeChatId, null, finalSystemInstruction, useWebSearch, activeModel);
       setMessages(prev => [...prev, { role: "model", content: response.reply, createdAt: Date.now() }]);
       if (!activeChatId && response.chatId) onChatUpdated();
     } catch (err) { notifyError(err.message || "Failed to branch conversation."); } finally { setIsLoading(false); }
@@ -139,7 +141,8 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     const newHistory = messages.slice(0, lastUserIndex + 1); 
     setMessages(newHistory); setIsLoading(true); stop();
     try {
-      const response = await sendMessageToAI(userMessage.content, newHistory.slice(0, -1), activeChatId, null, finalSystemInstruction, useWebSearch);
+      // 🟢 DAY 35: Pass activeModel
+      const response = await sendMessageToAI(userMessage.content, newHistory.slice(0, -1), activeChatId, null, finalSystemInstruction, useWebSearch, activeModel);
       setMessages([...newHistory, { role: "model", content: response.reply, createdAt: Date.now() }]);
       if (!activeChatId && response.chatId) onChatUpdated();
     } catch (err) { notifyError(err.message || "Failed to regenerate response."); } finally { setIsLoading(false); }
@@ -160,7 +163,8 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     const fileToSend = file; 
     setInput(""); setFile(null); setIsLoading(true);
     try {
-      const response = await sendMessageToAI(textToSend, messages, activeChatId, fileToSend, finalSystemInstruction, useWebSearch);
+      // 🟢 DAY 35: Pass activeModel
+      const response = await sendMessageToAI(textToSend, messages, activeChatId, fileToSend, finalSystemInstruction, useWebSearch, activeModel);
       setMessages((prev) => [...prev, { role: "model", content: response.reply, createdAt: Date.now() }]);
       if (!activeChatId && response.chatId) onChatUpdated();
     } catch (err) { notifyError(err.message || "Connection Error"); } finally { setIsLoading(false); }
@@ -173,7 +177,8 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     <div className={`flex flex-col h-full bg-slate-950 text-slate-100 relative w-full chat-container ${focusedMsgId !== null ? 'has-focus' : ''}`}>
       <DragOverlay isDragging={isDragging} /> 
 
-      <ChatHeader currentPersona={currentPersona} onExportMarkdown={handleExportMarkdown} onExportJSON={handleExportJSON} onCopyAll={handleCopyAll} onImportJSON={handleImportJSON} onImportBackup={onImportBackup} onOpenAnalytics={() => setIsAnalyticsOpen(true)} isFocusMode={isFocusMode} onToggleFocus={onToggleFocus} hasCustomPrompt={!!customPrompt} onToggleSearch={toggleSearch} isSearchOpen={isSearchOpen} onToggleBookmarks={onToggleBookmarks} onToggleDesktopSidebar={onToggleDesktopSidebar} />
+      {/* 🟢 DAY 35: Passed activeModel state to ChatHeader */}
+      <ChatHeader currentPersona={currentPersona} onExportMarkdown={handleExportMarkdown} onExportJSON={handleExportJSON} onCopyAll={handleCopyAll} onImportJSON={handleImportJSON} onImportBackup={onImportBackup} onOpenAnalytics={() => setIsAnalyticsOpen(true)} isFocusMode={isFocusMode} onToggleFocus={onToggleFocus} hasCustomPrompt={!!customPrompt} onToggleSearch={toggleSearch} isSearchOpen={isSearchOpen} onToggleBookmarks={onToggleBookmarks} onToggleDesktopSidebar={onToggleDesktopSidebar} activeModel={activeModel} setActiveModel={setActiveModel} />
       
       <ChatAnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} metrics={currentMetrics} />
       <InChatSearch isOpen={isSearchOpen} query={searchQuery} setQuery={setSearchQuery} onClose={toggleSearch} matchCount={displayedMessages.length} />
