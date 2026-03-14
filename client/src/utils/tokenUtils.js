@@ -4,15 +4,21 @@
  */
 
 // Define the maximum context window for the model (Gemini supports up to 1M+)
-// We set a high visual threshold for the UI progress bar.
 export const MAX_CONTEXT_TOKENS = 1048576; 
 
+// Estimate tokens for a single string
 export const estimateTokens = (text) => {
   if (!text) return 0;
-  // Fallback heuristic: length / 4 is standard for LLM estimation
   return Math.ceil(text.length / 4);
 };
 
+// Calculate total tokens for an entire chat history array
+export const calculateChatTokens = (messages) => {
+  if (!messages || !Array.isArray(messages)) return 0;
+  return messages.reduce((total, msg) => total + estimateTokens(msg.content || ""), 0);
+};
+
+// Determine UI color coding based on threshold
 export const getTokenMetrics = (tokenCount) => {
   if (tokenCount < 100) return { level: 'low', textColor: 'text-slate-500' };
   if (tokenCount < 1000) return { level: 'medium', textColor: 'text-emerald-500' };
