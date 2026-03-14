@@ -1,22 +1,17 @@
-export const MAX_CONTEXT_TOKENS = 32000; 
+/**
+ * Utility for estimating LLM token counts based on standard heuristics.
+ * Roughly, 1 token ≈ 4 characters or 0.75 words in English.
+ */
 
 export const estimateTokens = (text) => {
   if (!text) return 0;
-  return Math.ceil(text.trim().split(/\s+/).length * 1.3);
+  // Fallback heuristic: length / 4 is standard for Gemini/OpenAI
+  return Math.ceil(text.length / 4);
 };
 
-export const calculateChatTokens = (messages) => {
-  return messages.reduce((acc, msg) => acc + estimateTokens(msg.content), 0);
-};
-
-export const getTokenMetrics = (count) => {
-  const percentage = Math.min((count / MAX_CONTEXT_TOKENS) * 100, 100);
-  let color = "bg-emerald-500";
-  let textColor = "text-emerald-400";
-  let status = "Optimal";
-
-  if (percentage > 85) { color = "bg-red-500"; textColor = "text-red-400"; status = "Critical"; } 
-  else if (percentage > 60) { color = "bg-yellow-500"; textColor = "text-yellow-400"; status = "Warning"; }
-
-  return { percentage, color, textColor, status };
+export const getTokenMetrics = (tokenCount) => {
+  if (tokenCount < 100) return { level: 'low', textColor: 'text-slate-500' };
+  if (tokenCount < 500) return { level: 'medium', textColor: 'text-emerald-500' };
+  if (tokenCount < 2000) return { level: 'high', textColor: 'text-amber-500' };
+  return { level: 'critical', textColor: 'text-red-500' };
 };
