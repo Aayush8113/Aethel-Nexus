@@ -1,23 +1,31 @@
 import { useState, useEffect } from 'react';
 
 export const useInputDraft = (chatId) => {
-  const key = `aethel_draft_${chatId || 'new_chat'}`;
+  const draftKey = `aethel_draft_${chatId || 'new'}`;
   
-  const [draft, setDraft] = useState(() => {
-    try { return localStorage.getItem(key) || ""; } catch { return ""; }
+  // Initialize state from local storage if a draft exists
+  const [input, setInput] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) return saved;
+    }
+    return "";
   });
 
+  // Save to local storage whenever input changes
   useEffect(() => {
-    try { setDraft(localStorage.getItem(key) || ""); } catch { setDraft(""); }
-  }, [chatId, key]);
+    if (input.trim() === "") {
+      localStorage.removeItem(draftKey);
+    } else {
+      localStorage.setItem(draftKey, input);
+    }
+  }, [input, draftKey]);
 
-  const updateDraft = (val) => {
-    setDraft(val);
-    try {
-      if (val.trim()) localStorage.setItem(key, val);
-      else localStorage.removeItem(key);
-    } catch {}
-  };
+  // If the chatId changes, load the draft for the new chat
+  useEffect(() => {
+    const saved = localStorage.getItem(draftKey);
+    setInput(saved || "");
+  }, [chatId, draftKey]);
 
-  return [draft, updateDraft];
+  return [input, setInput];
 };
