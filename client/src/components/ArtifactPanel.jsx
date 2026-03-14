@@ -44,16 +44,16 @@ const ArtifactPanel = ({ isOpen, onClose, code, language, onChange }) => {
     success("File downloaded!");
   };
 
-  // Feature: Local JS Execution Engine
   const handleRunCode = () => {
     const isJS = language.toLowerCase() === 'javascript' || language.toLowerCase() === 'js';
     if (!isJS) {
       notifyError("Console only supports JavaScript.");
-      setConsoleOutput(["❌ Error: Execution Engine currently only supports JavaScript."]);
+      setConsoleOutput([{ timestamp: new Date().toLocaleTimeString(), logs: ["❌ Error: Execution Engine currently only supports JavaScript."] }]);
       return;
     }
 
-    setConsoleOutput([]); 
+    // Preserve existing history, default to empty array if closed
+    const currentOutput = consoleOutput || [];
     const logs = [];
     const originalLog = console.log;
     const originalError = console.error;
@@ -79,11 +79,15 @@ const ArtifactPanel = ({ isOpen, onClose, code, language, onChange }) => {
     } finally {
       console.log = originalLog;
       console.error = originalError;
-      setConsoleOutput([...logs]);
+      
+      // Append new run to history
+      setConsoleOutput([...currentOutput, {
+        timestamp: new Date().toLocaleTimeString(),
+        logs: logs
+      }]);
     }
   };
 
-  // Feature: 1-Click CodePen Deploy
   const handleCodePenExport = () => {
     const data = {
       title: "Generated Workspace Component",
