@@ -33,7 +33,7 @@ import { getReadTime, generateChatAnalytics } from "../utils/analyticsUtils";
 
 const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, isAutoRead, systemInstruction, customPrompt, currentPersona, onOpenArtifact, isFocusMode, onToggleFocus, onImportBackup, toggleBookmark, isBookmarked, onToggleBookmarks, onToggleDesktopSidebar, sttLang, setSttLang, useWebSearch, setUseWebSearch, activeModel, setActiveModel }) => {
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useInputDraft(activeChatId); // Feature: Persistent Drafts
+  const [input, setInput] = useInputDraft(activeChatId); 
   const [file, setFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [readingMsgId, setReadingMsgId] = useState(null);
@@ -45,10 +45,14 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
   const [lightboxSrc, setLightboxSrc] = useState(null);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false); 
 
+  // Fix: Explicitly defining local state for scroll visibility
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
   const { error: notifyError, success } = useNotify();
   const { isListening, transcript, startListening, resetTranscript } = useSpeechRecognition(sttLang);
   const { isDragging, droppedImage, droppedText, clearDroppedFiles } = useDragDrop(); 
-  const { containerRef, messagesEndRef, isAutoScrollEnabled, showScrollBottom, showScrollTop, handleScroll, scrollToBottom, scrollToTop } = useSmartScroll([messages, isLoading]);
+  const { containerRef, messagesEndRef, isAutoScrollEnabled, handleScroll, scrollToBottom, scrollToTop } = useSmartScroll([messages, isLoading]);
   const { isSearchOpen, searchQuery, setSearchQuery, toggleSearch } = useChatSearch();
 
   const prevMsgLength = useRef(messages.length);
@@ -103,7 +107,7 @@ const ChatInterface = ({ activeChatId, onChatUpdated, speak, stop, isSpeaking, i
     const { scrollTop, scrollHeight, clientHeight } = e.target;
     setShowScrollBottom(scrollHeight - scrollTop - clientHeight > 150);
     setShowScrollTop(scrollTop > 400);
-    handleScroll(e);
+    if (handleScroll) handleScroll(e);
   };
 
   const handleExportMarkdown = () => downloadChatAsMarkdown("Aethel_Chat", messages);
