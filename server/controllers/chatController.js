@@ -13,14 +13,18 @@ const fileToGenerativePart = (path, mimeType) => {
 
 exports.handleChat = async (req, res) => {
   try {
-    const { message, chatId, systemInstruction, useWebSearch } = req.body;
+    // 🟢 DAY 35: Extracted modelId from req.body
+    const { message, chatId, systemInstruction, useWebSearch, modelId } = req.body;
     let history = req.body.history ? JSON.parse(req.body.history) : [];
 
     const tools = [];
     if (useWebSearch === 'true') tools.push({ googleSearch: {} }); 
 
+    // 🟢 DAY 35: Set target model dynamically, fallback to 2.0
+    const targetModel = modelId || "gemini-2.0-flash";
+
     const modelOptions = { 
-      model: "gemini-2.0-flash", 
+      model: targetModel, 
       systemInstruction: systemInstruction ? { role: "system", parts: [{ text: systemInstruction }] } : undefined,
       tools: tools.length > 0 ? tools : undefined
     };
@@ -109,7 +113,6 @@ exports.deleteChat = async (req, res) => { try { await Chat.findByIdAndDelete(re
 exports.deleteAllChats = async (req, res) => { try { await Chat.deleteMany({}); res.json({ success: true }); } catch (err) { res.status(500).json({ error: 'Failed' }); } };
 exports.togglePinChat = async (req, res) => { try { const chat = await Chat.findById(req.params.id); chat.isPinned = !chat.isPinned; await chat.save(); res.json(chat); } catch (err) { res.status(500).json({ error: 'Failed' }); } };
 exports.updateChatTitle = async (req, res) => { try { const { title } = req.body; const chat = await Chat.findById(req.params.id); chat.title = title; await chat.save(); res.json(chat); } catch (err) { res.status(500).json({ error: 'Failed' }); } };
-
 exports.searchAllChats = async (req, res) => {
   try {
     const { q } = req.query;
@@ -125,23 +128,14 @@ exports.searchAllChats = async (req, res) => {
     res.status(500).json({ error: 'Failed to search database' });
   }
 };
-
-// 🟢 DAY 34: Chat Forking Logic
 exports.forkChat = async (req, res) => {
   try {
     const originalChat = await Chat.findById(req.params.id);
     if (!originalChat) return res.status(404).json({ error: 'Chat not found' });
-
-    const newChat = new Chat({
-      title: `${originalChat.title} (Fork)`,
-      isPinned: false,
-      messages: originalChat.messages
-    });
-
+    const newChat = new Chat({ title: `${originalChat.title} (Fork)`, isPinned: false, messages: originalChat.messages });
     await newChat.save();
     res.json(newChat);
   } catch (err) {
-    console.error("Fork Error:", err);
     res.status(500).json({ error: 'Failed to fork workspace' });
   }
 };
