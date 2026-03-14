@@ -5,8 +5,6 @@ import VoiceInput from "./VoiceInput";
 import PromptMenu from "./PromptMenu";
 import { PROMPTS } from "../data/prompts";
 import { estimateTokens, getTokenMetrics } from "../utils/tokenUtils"; 
-import { getCharCount, getWordCount } from "../utils/textStats";
-import { autoFormatInput } from "../utils/codeFormatUtils";
 
 const MessageInput = ({ input, setInput, isListening, startListening, isLoading, handleSend, isSpeaking, stopSpeaking, file, setFile, notifySuccess, sttLang, setSttLang, useWebSearch, setUseWebSearch }) => {
   const textareaRef = useRef(null);
@@ -41,30 +39,6 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(e); }
   };
 
-  const handlePaste = (e) => {
-    const items = e.clipboardData?.items;
-    let hasImage = false;
-    if (items) {
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-          e.preventDefault(); setFile(items[i].getAsFile()); if (notifySuccess) notifySuccess("Image pasted!"); hasImage = true; break;
-        }
-      }
-    }
-    if (!hasImage) {
-      const text = e.clipboardData.getData('Text');
-      if (text) {
-        const formatted = autoFormatInput(text);
-        if (formatted !== text) {
-          e.preventDefault();
-          const start = textareaRef.current.selectionStart; const end = textareaRef.current.selectionEnd;
-          setInput(input.substring(0, start) + formatted + input.substring(end));
-          if (notifySuccess) notifySuccess("Auto-formatted pasted code!");
-        }
-      }
-    }
-  };
-
   const handleFileSelect = (e) => { if (e.target.files && e.target.files[0]) setFile(e.target.files[0]); };
 
   const cycleLanguage = () => {
@@ -75,7 +49,7 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
 
   const currentTokens = estimateTokens(input);
   const { textColor: tokenColor } = getTokenMetrics(currentTokens);
-  const isImage = file && file.type.startsWith('image/');
+  const isImage = file && file.type?.startsWith('image/');
 
   return (
     <div className="relative max-w-4xl mx-auto w-full">
@@ -113,7 +87,7 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
           <div className="flex-shrink-0 mb-1"><VoiceInput isListening={isListening} onToggle={startListening} /></div>
 
           <div className="relative flex-1">
-            <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste} placeholder={isListening ? "Listening..." : useWebSearch ? "Ask anything (Searching the live web)..." : "Type '/' for commands or attach a PDF..."} rows={1} className={`w-full bg-transparent text-white pl-2 pr-10 py-3 resize-none outline-none overflow-y-auto text-sm md:text-base custom-scrollbar ${isListening ? "placeholder-red-400" : useWebSearch ? "placeholder-blue-400" : "placeholder-slate-500"}`} disabled={isLoading} />
+            <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={isListening ? "Listening..." : useWebSearch ? "Ask anything (Searching the live web)..." : "Type '/' for commands or attach a PDF..."} rows={1} className={`w-full bg-transparent text-white pl-2 pr-10 py-3 resize-none outline-none overflow-y-auto text-sm md:text-base custom-scrollbar ${isListening ? "placeholder-red-400" : useWebSearch ? "placeholder-blue-400" : "placeholder-slate-500"}`} disabled={isLoading} />
           </div>
 
           {input && !isLoading && (<button type="button" onClick={() => { setInput(""); setShowPrompts(false); }} className="mb-3 text-slate-500 hover:text-red-400 transition-colors" title="Clear"><IoCloseCircleOutline size={20} /></button>)}
@@ -122,10 +96,13 @@ const MessageInput = ({ input, setInput, isListening, startListening, isLoading,
         </div>
       </form>
       
+      {/* Telemetry Display */}
       <div className="absolute -bottom-6 right-2 text-[10px] text-slate-500 font-mono transition-opacity opacity-0 group-hover:opacity-100 select-none flex gap-3">
-        <span>{getCharCount(input)} chars</span><span>{getWordCount(input)} words</span><span className={tokenColor}>{currentTokens} tokens</span>
+        <span>{input.length} chars</span>
+        <span className={tokenColor}>{currentTokens} tokens</span>
       </div>
     </div>
   );
 };
+
 export default MessageInput;
