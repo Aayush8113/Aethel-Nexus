@@ -13,14 +13,14 @@ const fileToGenerativePart = (path, mimeType) => {
 
 exports.handleChat = async (req, res) => {
   try {
-    // 🟢 DAY 35: Extracted modelId from req.body
     const { message, chatId, systemInstruction, useWebSearch, modelId } = req.body;
     let history = req.body.history ? JSON.parse(req.body.history) : [];
 
+    // Feature: Web Search Grounding
     const tools = [];
     if (useWebSearch === 'true') tools.push({ googleSearch: {} }); 
 
-    // 🟢 DAY 35: Set target model dynamically, fallback to 2.0
+    // Feature: Dynamic Model Selector
     const targetModel = modelId || "gemini-2.0-flash";
 
     const modelOptions = { 
@@ -36,6 +36,7 @@ exports.handleChat = async (req, res) => {
       parts: [{ text: msg.content }]
     }));
 
+    // Feature: Token Optimization (Truncation)
     if (formattedHistory.length > 10) formattedHistory = formattedHistory.slice(-10);
     while (formattedHistory.length > 0 && formattedHistory[0].role !== 'user') formattedHistory.shift(); 
 
@@ -45,6 +46,7 @@ exports.handleChat = async (req, res) => {
     let finalUserMessage = message;
     let imageUrlForDb = null;
 
+    // Feature: RAG Engine (PDF/CSV/Images)
     if (req.file) {
       const mime = req.file.mimetype;
       const filePath = req.file.path;
@@ -98,9 +100,10 @@ exports.handleChat = async (req, res) => {
 
   } catch (error) {
     console.error("AI Generation Error:", error);
+    // Feature: Graceful 429 Quota Handling
     if (!res.headersSent) {
       if (error.status === 429 || (error.message && error.message.includes('429'))) {
-          return res.status(429).json({ error: "Google Quota Exceeded. Please wait 15 seconds." });
+          return res.status(429).json({ error: "Google API Quota Exceeded. Please wait 15 seconds." });
       }
       return res.status(500).json({ error: error.message || 'Internal Server Error' });
     }
@@ -113,6 +116,8 @@ exports.deleteChat = async (req, res) => { try { await Chat.findByIdAndDelete(re
 exports.deleteAllChats = async (req, res) => { try { await Chat.deleteMany({}); res.json({ success: true }); } catch (err) { res.status(500).json({ error: 'Failed' }); } };
 exports.togglePinChat = async (req, res) => { try { const chat = await Chat.findById(req.params.id); chat.isPinned = !chat.isPinned; await chat.save(); res.json(chat); } catch (err) { res.status(500).json({ error: 'Failed' }); } };
 exports.updateChatTitle = async (req, res) => { try { const { title } = req.body; const chat = await Chat.findById(req.params.id); chat.title = title; await chat.save(); res.json(chat); } catch (err) { res.status(500).json({ error: 'Failed' }); } };
+
+// Feature: Global MongoDB Search
 exports.searchAllChats = async (req, res) => {
   try {
     const { q } = req.query;
@@ -128,6 +133,8 @@ exports.searchAllChats = async (req, res) => {
     res.status(500).json({ error: 'Failed to search database' });
   }
 };
+
+// Feature: Chat Forking
 exports.forkChat = async (req, res) => {
   try {
     const originalChat = await Chat.findById(req.params.id);
