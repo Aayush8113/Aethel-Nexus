@@ -17,14 +17,14 @@ export const searchGlobalChats = async (query) => {
   return res.json();
 };
 
-// 🟢 DAY 34: Forking Fetch Call
 export const forkChat = async (id) => {
   const res = await fetch(`${API_URL}/chats/${id}/fork`, { method: 'POST' });
   if (!res.ok) throw new Error("Failed to fork chat");
   return res.json();
 };
 
-export const sendMessageToAI = async (message, history, chatId, attachedFile, systemInstruction, useWebSearch) => {
+// 🟢 DAY 35: Added modelId to payload
+export const sendMessageToAI = async (message, history, chatId, attachedFile, systemInstruction, useWebSearch, modelId) => {
   const formData = new FormData();
   formData.append('message', message);
   formData.append('history', JSON.stringify(history));
@@ -32,6 +32,7 @@ export const sendMessageToAI = async (message, history, chatId, attachedFile, sy
   if (attachedFile) formData.append('file', attachedFile);
   if (systemInstruction) formData.append('systemInstruction', systemInstruction);
   if (useWebSearch) formData.append('useWebSearch', 'true');
+  if (modelId) formData.append('modelId', modelId); // <-- NEW
 
   const res = await fetch(`${API_URL}/chat`, { method: 'POST', body: formData });
   if (!res.ok) {
