@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { IoAdd, IoChatbubbleOutline, IoSettingsOutline, IoTrashOutline, IoPinOutline, IoPin, IoPeopleOutline, IoSearchOutline, IoClose } from "react-icons/io5";
-import { searchGlobalChats } from "../services/api";
+import { IoAdd, IoChatbubbleOutline, IoSettingsOutline, IoTrashOutline, IoPinOutline, IoPin, IoPeopleOutline, IoSearchOutline, IoClose, IoCopyOutline } from "react-icons/io5";
+import { searchGlobalChats, forkChat } from "../services/api"; 
+import { useNotify } from "../hooks/useNotify"; 
 
-const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, isOpen, onClose, onDeleteChat, onTogglePin, onClearAll, onRenameChat, onOpenSettings, onOpenPersonas, isInstallable, installApp, isDesktopSidebarOpen }) => {
+const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, isOpen, onClose, onDeleteChat, onTogglePin, onClearAll, onRenameChat, onOpenSettings, onOpenPersonas, isInstallable, installApp, isDesktopSidebarOpen, reloadChats }) => {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
+  const { success, error: notifyError } = useNotify();
   
-  // Search State
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -38,6 +39,19 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, isOpen, onClose
     setEditingId(null);
   };
 
+  // 🟢 DAY 34: The Fork Handler
+  const handleFork = async (e, id) => {
+    e.stopPropagation();
+    try {
+      const newChat = await forkChat(id);
+      success("Workspace duplicated!");
+      if (reloadChats) reloadChats(); 
+      onSelectChat(newChat._id); 
+    } catch (err) {
+      notifyError("Failed to duplicate workspace.");
+    }
+  };
+
   const renderChatItem = (chat) => (
     <div key={chat._id} className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200 ${activeChatId === chat._id ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30" : "hover:bg-slate-800 text-slate-300 border border-transparent"}`} onClick={() => onSelectChat(chat._id)}>
       <div className="flex items-center gap-3 overflow-hidden flex-1">
@@ -51,9 +65,13 @@ const Sidebar = ({ chats, activeChatId, onSelectChat, onNewChat, isOpen, onClose
         )}
       </div>
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-        {!searchQuery && <button onClick={(e) => { e.stopPropagation(); onTogglePin(chat._id); }} className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-700 rounded-lg transition-colors">{chat.isPinned ? <IoPin size={14} className="text-amber-400"/> : <IoPinOutline size={14}/>}</button>}
-        <button onClick={(e) => startEdit(e, chat)} className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-700 rounded-lg transition-colors"><IoChatbubbleOutline size={14} /></button>
-        <button onClick={(e) => { e.stopPropagation(); onDeleteChat(chat._id); }} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg transition-colors"><IoTrashOutline size={14} /></button>
+        {!searchQuery && <button onClick={(e) => { e.stopPropagation(); onTogglePin(chat._id); }} className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-700 rounded-lg transition-colors" title="Pin">{chat.isPinned ? <IoPin size={14} className="text-amber-400"/> : <IoPinOutline size={14}/>}</button>}
+        
+        {/* 🟢 DAY 34: Fork Action Button */}
+        <button onClick={(e) => handleFork(e, chat._id)} className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-700 rounded-lg transition-colors" title="Duplicate Workspace"><IoCopyOutline size={14} /></button>
+        
+        <button onClick={(e) => startEdit(e, chat)} className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-700 rounded-lg transition-colors" title="Rename"><IoChatbubbleOutline size={14} /></button>
+        <button onClick={(e) => { e.stopPropagation(); onDeleteChat(chat._id); }} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg transition-colors" title="Delete"><IoTrashOutline size={14} /></button>
       </div>
     </div>
   );
