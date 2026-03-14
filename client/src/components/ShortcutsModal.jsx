@@ -1,4 +1,4 @@
-import { IoClose, IoKeyboardOutline, IoFlashOutline } from "react-icons/io5";
+import { IoClose, IoTerminalOutline, IoFlashOutline } from "react-icons/io5";
 
 const ShortcutsModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
@@ -19,7 +19,7 @@ const ShortcutsModal = ({ isOpen, onClose }) => {
         
         <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <IoKeyboardOutline className="text-indigo-400"/> Keyboard Shortcuts
+            <IoTerminalOutline className="text-indigo-400"/> Keyboard Shortcuts
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors"><IoClose size={24} /></button>
         </div>
